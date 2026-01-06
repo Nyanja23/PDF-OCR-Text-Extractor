@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Env
+.env
+.venv
+env/
+venv/
+
+# Databases
+*.db
+*.sqlite3
+
+# Logs and uploads
+logs/
+uploads/
+
+# Tests
+.pytest_cache/
+
+# Docker
+*.dockerignore
+
+# Misc
+.DS_Store
+*.log
