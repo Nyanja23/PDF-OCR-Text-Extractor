@@ -10,9 +10,9 @@ from starlette.responses import RedirectResponse
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
-from app.schemas.user import (
-    UserCreate, UserLogin, UserResponse, OTPVerify,
-    PasswordResetRequest, PasswordReset, TokenResponse
+from app.schemas.user import UserCreate, UserLogin, UserResponse
+from app.schemas.auth import (
+    OTPVerify, PasswordResetRequest, PasswordReset, TokenResponse
 )
 from app.services.auth_service import AuthService
 from app.core.config import settings
@@ -37,14 +37,23 @@ async def register(
     db: Session = Depends(get_db)
 ):
     """Register a new user"""
-    auth_service = AuthService(db)
-    user, otp_code = auth_service.register_user(user_data)
-    
-    return {
-        "message": "Registration successful. Please check your email for verification code.",
-        "email": user.email,
-        "user_id": user.id
-    }
+    try:
+        auth_service = AuthService(db)
+        user, otp_code = auth_service.register_user(user_data)
+
+        return {
+            "message": "Registration successful. Please check your email for verification code.",
+            "email": user.email,
+            "user_id": user.id
+        }
+    except HTTPException:
+        # Let FastAPI handle known HTTPExceptions
+        raise
+    except Exception as e:
+        # Log full traceback to console for debugging, then return 500
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 @router.post("/verify-email", response_model=dict)

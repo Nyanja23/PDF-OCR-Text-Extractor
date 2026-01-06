@@ -14,7 +14,7 @@ import os
 
 from app.core.config import settings
 from app.services.preprocessing import ImagePreprocessor
-from app.schemas.user import OCRResult
+from app.schemas.ocr import OCRResult
 from app.core.exceptions import OCRProcessingException
 
 

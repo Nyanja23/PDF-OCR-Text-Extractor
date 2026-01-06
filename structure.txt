@@ -1,0 +1,33 @@
+.
+├── app
+│   ├── core
+│   ├── middleware
+│   ├── models
+│   ├── routers
+│   ├── schemas
+│   ├── services
+│   └── utils
+├── docker
+│   ├── docker-compose.yml
+│   └── Dockerfile
+├── logs
+├── main.py
+├── ocr_app.db
+├── __pycache__
+│   └── main.cpython-312.pyc
+├── README.md
+├── requirements.txt
+├── static
+├── structure.txt
+├── SWAGGER_TESTS.txt
+├── templates
+├── tests
+├── uploads
+└── venv
+    ├── bin
+    ├── include
+    ├── lib
+    ├── lib64 -> lib
+    └── pyvenv.cfg
+
+21 directories, 10 files

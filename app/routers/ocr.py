@@ -14,7 +14,7 @@ from datetime import datetime
 from app.core.database import get_db
 from app.core.dependencies import get_verified_user
 from app.models.user import User
-from app.schemas.user import OCRResponse, OCRResult
+from app.schemas.ocr import OCRResponse, OCRResult
 from app.services.ocr_service import OCRService
 from app.services.file_service import FileService
 from app.core.exceptions import BadRequestException, OCRProcessingException

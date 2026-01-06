@@ -4,8 +4,7 @@ Main Application Entry Point
 """
 
 from fastapi import FastAPI, Request
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from contextlib import asynccontextmanager
@@ -13,7 +12,7 @@ import uvicorn
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.routers import auth, users, ocr, pages
+from app.routers import auth, users, ocr
 from app.middleware.rate_limit_middleware import RateLimitMiddleware
 from app.utils.file_handlers import cleanup_old_files
 import asyncio
@@ -60,8 +59,8 @@ app = FastAPI(
     title="PDF OCR Text Extractor",
     description="Extract text from PDFs and images using advanced OCR",
     version="1.0.0",
-    docs_url="/api/docs" if settings.DEBUG else None,
-    redoc_url="/api/redoc" if settings.DEBUG else None,
+    docs_url="/docs",
+    redoc_url="/redoc",
     lifespan=lifespan
 )
 
@@ -81,12 +80,7 @@ app.add_middleware(
 
 app.add_middleware(RateLimitMiddleware)
 
-# Static files and templates
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
-
-# Include routers
-app.include_router(pages.router, tags=["Pages"])
+# Include routers (API-only backend; no templates)
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(ocr.router, prefix="/api/ocr", tags=["OCR"])
@@ -95,7 +89,7 @@ app.include_router(ocr.router, prefix="/api/ocr", tags=["OCR"])
 @app.get("/")
 async def root(request: Request):
     """Redirect to landing page"""
-    return templates.TemplateResponse("landing.html", {"request": request})
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/health")

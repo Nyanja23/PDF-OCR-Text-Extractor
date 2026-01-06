@@ -1,0 +1,76 @@
+Swagger UI Local Test Checklist
+
+Base URL
+- http://127.0.0.1:8000
+- Open Swagger UI: http://127.0.0.1:8000/docs
+
+Quick smoke
+- Load `/docs` and confirm the Swagger UI page renders and shows API groups.
+- Hit `GET /health` -> expect 200 and JSON with `status: healthy` and service/version info.
+
+Authentication (/api/auth)
+- POST /api/auth/register
+  - Payload example: {"email":"test-debug-2026@example.com","password":"Str0ngPass123!","full_name":"Debug User 2026"}
+  - Expect success (200/201) and user info (or guidance to verify email).
+  
+- POST /api/auth/login
+  - Payload: {"email":"test-debug-2026@example.com","password":"Str0ngPass123!","full_name":"Debug User 2026"}
+  - Expect access token (JWT) or session token in response.
+- Use Swagger "Authorize" UI (if provided): paste `Bearer <token>` and test protected endpoints.
+
+Users (/api/users)
+- GET /api/users/me (or GET /api/users/{id})
+  - Test with valid token: expect user profile JSON.
+  - Test without token: expect 401 Unauthorized.
+- PUT/PATCH update user
+  - Update profile fields, expect 200 and updated user data.
+
+OCR (/api/ocr)
+- POST /api/ocr/upload OR POST /api/ocr (file upload endpoints)
+  - Use Swagger "Try it out" file upload to send a small PDF and a small image (png/jpg).
+  - Expect 200/201 with job id or immediate result.
+- GET /api/ocr/jobs/{job_id}/status
+  - Poll until job reports `done`/`completed`.
+- GET /api/ocr/jobs/{job_id}/result (or /api/ocr/results/{job_id})
+  - Expect extracted text in JSON or a downloadable file. Verify text correctness for a known small sample.
+- Test uploading unsupported file type (e.g., .exe) -> expect 400 or a clear error message.
+
+Files and uploads
+- Verify responses include any file URLs or job ids you can use.
+- Confirm uploads are stored under `uploads/` while processing.
+- Check `uploads/` cleanup behavior manually if necessary (files older than configured period should be removed by background task).
+
+Error handling and edge cases
+- Request a non-existent job id -> expect 404 with JSON error body.
+- Send malformed JSON to POST endpoints -> expect 422 Unprocessable Entity.
+- Test invalid auth token -> expect 401.
+
+Rate limiting / middleware
+- Rapidly send repeated requests to a protected endpoint and watch for 429 Too Many Requests if rate limiting is enabled.
+
+CORS and headers
+- From a browser or curl, send an `Origin` header and verify allowed origins behavior.
+- Confirm `Access-Control-Allow-Origin` appears when expected.
+
+Background tasks and DB
+- Create a user and an OCR job; verify DB tables reflect created records (optional manual DB query).
+- Upload a job and poll status until completion to validate background processing works.
+
+Swagger-specific checks
+- Ensure request/response models shown in Swagger match actual responses.
+- Use "Try it out" for file uploads and JSON payloads; copy responses for further tests.
+
+How to run locally
+1. Start server (development):
+
+   uvicorn main:app --reload --host 127.0.0.1 --port 8000
+
+2. Open Swagger UI: http://127.0.0.1:8000/docs
+3. Use the checklist above to exercise endpoints.
+
+Notes
+- Save any tokens returned by login to authorize subsequent requests in Swagger.
+- If an endpoint name differs from these examples, use the equivalent shown in the Swagger UI.
+- For longer end-to-end tests, prepare a small PDF with known text to verify OCR accuracy.
+
+End of checklist.
