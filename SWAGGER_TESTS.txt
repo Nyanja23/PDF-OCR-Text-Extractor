@@ -12,7 +12,7 @@ Authentication (/api/auth)
 - POST /api/auth/register
   - Payload example: {"email":"test-debug-2026@example.com","password":"Str0ngPass123!","full_name":"Debug User 2026"}
   - Expect success (200/201) and user info (or guidance to verify email).
-  
+
 - POST /api/auth/login
   - Payload: {"email":"test-debug-2026@example.com","password":"Str0ngPass123!","full_name":"Debug User 2026"}
   - Expect access token (JWT) or session token in response.
@@ -74,3 +74,36 @@ Notes
 - For longer end-to-end tests, prepare a small PDF with known text to verify OCR accuracy.
 
 End of checklist.
+
+## Security: Password Hashing Update (January 2026)
+
+### Why we switched from passlib to direct bcrypt
+
+We originally used `passlib[bcrypt]` for password hashing. However, after upgrading dependencies in early 2026, we encountered a compatibility issue:
+
+- `bcrypt` ≥ 4.1.0 removed the internal `__about__` module.
+- `passlib` 1.7.4 (last release ~2020) still tried to access it during backend detection → causing AttributeError followed by misleading "password too long" errors — even for short passwords.
+
+This is a known, unmaintained dependency mismatch (passlib is no longer updated).
+
+### Solution applied
+
+- **Removed** `passlib` entirely.
+- Switched to **direct usage** of the `bcrypt` library (`bcrypt.hashpw` + `bcrypt.checkpw`).
+- Kept the existing safe truncation logic (`_truncate_password`) to respect bcrypt's 72-byte limit.
+- Behavior remains identical; only the implementation is cleaner and future-proof.
+
+**Affected files:**
+- `app/core/security.py`
+
+**Benefits:**
+- No more cryptic compatibility crashes
+- Fewer unmaintained dependencies
+- Direct control over hashing parameters
+
+**To use in development:**
+Make sure `bcrypt` is installed (`pip install bcrypt`).
+
+Registration, login, password change, and reset should now work without hashing-related errors.
+
+Note: Email sending still requires valid SMTP credentials in `.env` (e.g. Gmail app password) — that's a separate configuration step.
