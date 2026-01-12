@@ -1,35 +1,33 @@
-# PDF OCR Text Extractor - Backend
+# PDF OCR Text Extractor
 
-A production-ready FastAPI backend for extracting text from PDFs and images using advanced OCR technology.
-
-## 🚀 Features
+##  Features
 
 ### Core Features
-- ✅ **User Authentication**
+-  **User Authentication**
   - Email/Password registration with OTP verification
   - Google OAuth integration
   - Secure session management
   - Password reset flow
 
-- ✅ **OCR Processing**
+-  **OCR Processing**
   - Multi-page PDF support
   - Advanced image preprocessing pipeline
   - Support for JPG, PNG, TIFF, PDF
   - Real-time processing with confidence scores
 
-- ✅ **Security**
+- **Security**
   - Bcrypt password hashing
   - HTTPOnly secure cookies
   - CSRF protection
   - Rate limiting
   - SQL injection prevention
 
-- ✅ **File Management**
+- **File Management**
   - Automatic file cleanup
   - File validation and sanitization
   - Temporary storage with UUID naming
 
-## 📋 Prerequisites
+##  Prerequisites
 
 - Python 3.11+
 - Tesseract OCR
@@ -86,7 +84,7 @@ python scripts/init_db.py
 alembic upgrade head
 ```
 
-## 🏃 Running the Application
+##  Running the Application
 
 ### Development Mode
 ```bash
@@ -110,7 +108,7 @@ docker-compose logs -f app
 docker-compose down
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 pdf-ocr-extractor/
@@ -134,7 +132,7 @@ pdf-ocr-extractor/
 └── README.md          # This file
 ```
 
-## 🔌 API Endpoints
+##  API Endpoints
 
 ### Authentication
 - `POST /api/auth/register` - Register new user
@@ -157,7 +155,7 @@ pdf-ocr-extractor/
 - `POST /api/ocr/export/{job_id}` - Export result as file
 - `GET /api/ocr/languages` - Get supported languages
 
-## 🔒 Security Features
+## Security Features
 
 1. **Password Security**
    - Bcrypt hashing with cost factor 12
@@ -180,7 +178,7 @@ pdf-ocr-extractor/
    - XSS prevention
    - SQL injection prevention
 
-## 📧 Email Configuration
+## Email Configuration
 
 ### Gmail Setup
 1. Enable 2-factor authentication
@@ -201,7 +199,7 @@ SMTP_USER=apikey
 SMTP_PASSWORD=your-sendgrid-api-key
 ```
 
-## 🧪 Testing
+## Testing
 
 ```bash
 # Run all tests
@@ -214,7 +212,7 @@ pytest --cov=app --cov-report=html
 pytest tests/test_auth.py
 ```
 
-## 📊 Database Migrations
+## Database Migrations
 
 ```bash
 # Create new migration
@@ -227,7 +225,7 @@ alembic upgrade head
 alembic downgrade -1
 ```
 
-## 🚀 Deployment
+## Deployment
 
 ### Environment Variables
 Set these in production:
@@ -259,12 +257,6 @@ Key variables:
 - `GOOGLE_CLIENT_ID/SECRET` - OAuth credentials
 - `TESSERACT_CMD` - Path to Tesseract binary
 
-## 🐛 Troubleshooting
-
-### Tesseract not found
-```bash
-# Check if installed
-tesseract --version
 
 # Set path in .env
 TESSERACT_CMD=/usr/local/bin/tesseract  # macOS
@@ -287,30 +279,10 @@ psql -h localhost -U ocr_user -d ocr_database
 pip install -r requirements.txt --force-reinstall
 ```
 
-## 📄 License
-
-MIT License - See LICENSE file for details
-
-## 👥 Contributing
+##  Contributing
 
 1. Fork the repository
 2. Create feature branch: `git checkout -b feature-name`
 3. Commit changes: `git commit -am 'Add feature'`
 4. Push to branch: `git push origin feature-name`
 5. Submit pull request
-
-## 📞 Support
-
-For issues and questions:
-- GitHub Issues: <repository-url>/issues
-- Email: support@pdfocr.com
-
-## 🎯 Roadmap
-
-- [ ] Document history and search
-- [ ] Batch processing
-- [ ] Multiple language support UI
-- [ ] Export to DOCX/PDF
-- [ ] API rate limiting tiers
-- [ ] Admin dashboard
-- [ ] Webhook notifications
