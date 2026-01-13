@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF OCR - Verify Your Email</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0a0b0d;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .animated-bg {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 20s ease infinite;
+            opacity: 0.15;
+            z-index: 0;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Floating orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            z-index: 1;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: #667eea;
+            top: -200px;
+            right: -200px;
+        }
+
+        .orb-2 {
+            width: 350px;
+            height: 350px;
+            background: #764ba2;
+            bottom: -150px;
+            left: -150px;
+            animation-delay: 5s;
+        }
+
+        .orb-3 {
+            width: 300px;
+            height: 300px;
+            background: #4facfe;
+            top: 50%;
+            right: 10%;
+            animation-delay: 10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(50px, -50px); }
+            50% { transform: translate(-30px, 30px); }
+            75% { transform: translate(30px, 50px); }
+        }
+
+        .container {
+            position: relative;
+            display: flex;
+            min-height: 100vh;
+            z-index: 2;
+        }
+
+        /* Left Section */
+        .left-section {
+            flex: 1;
+            padding: 4rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            animation: slideInLeft 0.8s ease;
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            display: flex;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeIn 0.8s ease 0.2s both;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .logo i {
+            margin-right: 15px;
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 20px rgba(102, 126, 234, 0.5));
+        }
+
+        .tagline {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #ffffff 0%, #667eea 50%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeIn 0.8s ease 0.3s both;
+        }
+
+        .description {
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 3rem;
+            max-width: 500px;
+            line-height: 1.6;
+            animation: fadeIn 0.8s ease 0.4s both;
+        }
+
+        .features {
+            list-style: none;
+            margin-top: 2rem;
+        }
+
+        .features li {
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.05rem;
+            opacity: 0;
+            animation: slideInFeature 0.6s ease forwards;
+        }
+
+        .features li:nth-child(1) { animation-delay: 0.5s; }
+        .features li:nth-child(2) { animation-delay: 0.6s; }
+        .features li:nth-child(3) { animation-delay: 0.7s; }
+        .features li:nth-child(4) { animation-delay: 0.8s; }
+        .features li:nth-child(5) { animation-delay: 0.9s; }
+
+        @keyframes slideInFeature {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .features i {
+            margin-right: 15px;
+            color: #667eea;
+            font-size: 1.3rem;
+            filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.5));
+        }
+
+        /* Right Section */
+        .right-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            animation: slideInRight 0.8s ease;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .verification-container {
+            width: 100%;
+            max-width: 520px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .verification-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.8), transparent);
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            color: #667eea;
+        }
+
+        .back-button i {
+            margin-right: 8px;
+        }
+
+        .form-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #ffffff 0%, #667eea 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .form-subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .email-display {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid #667eea;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .email-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 0.5rem;
+        }
+
+        .email-address {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #667eea;
+            word-break: break-all;
+        }
+
+        .account-info {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 0.5rem;
+        }
+
+        .otp-inputs {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .otp-input {
+            flex: 1;
+            max-width: 70px;
+            height: 80px;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .otp-input:focus {
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+            outline: none;
+            transform: scale(1.05);
+        }
+
+        .otp-input.filled {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .verify-button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .verify-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .verify-button:hover:not(:disabled)::before {
+            left: 100%;
+        }
+
+        .verify-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+        }
+
+        .verify-button:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .resend-section {
+            text-align: center;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .resend-text {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 0.8rem;
+            font-size: 0.95rem;
+        }
+
+        .resend-button {
+            background: none;
+            border: none;
+            color: #667eea;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .resend-button:hover:not(:disabled) {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .resend-button:disabled {
+            color: rgba(255, 255, 255, 0.3);
+            cursor: not-allowed;
+        }
+
+        .timer {
+            color: #ff6b6b;
+            font-weight: 700;
+            margin-left: 5px;
+        }
+
+        .secure-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.2) 100%);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 700;
+        }
+
+        .secure-badge i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        .message {
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: none;
+            align-items: center;
+            animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.2) 100%);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.2) 100%);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ff6b6b;
+        }
+
+        .message i {
+            margin-right: 10px;
+        }
+
+        .footer {
+            position: relative;
+            text-align: center;
+            padding: 2rem;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+            z-index: 2;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .left-section {
+                padding: 3rem 2rem;
+            }
+            
+            .tagline {
+                font-size: 2.5rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .left-section, .right-section {
+                padding: 2rem 1.5rem;
+            }
+            
+            .tagline {
+                font-size: 2rem;
+            }
+            
+            .verification-container {
+                padding: 2rem;
+            }
+            
+            .form-title {
+                font-size: 1.8rem;
+            }
+            
+            .otp-inputs {
+                gap: 0.3rem;
+            }
+            
+            .otp-input {
+                max-width: 50px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+            
+            .email-address {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="animated-bg"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="container">
+        <div class="left-section">
+            <div class="logo">
+                <i class="fas fa-file-pdf"></i>
+                PDF OCR
+            </div>
+            <h1 class="tagline">Almost there!</h1>
+            <p class="description">AI-powered OCR for professionals. Verify your email to activate your account and start using our advanced text extraction features.</p>
+            
+            <ul class="features">
+                <li><i class="fas fa-check-circle"></i> AI-powered text recognition with 99.8% accuracy</li>
+                <li><i class="fas fa-envelope"></i> Secure email verification process</li>
+                <li><i class="fas fa-shield-alt"></i> Enterprise-grade account protection</li>
+                <li><i class="fas fa-bolt"></i> Instant activation after verification</li>
+                <li><i class="fas fa-cloud-upload-alt"></i> Start processing documents immediately</li>
+            </ul>
+        </div>
+
+        <div class="right-section">
+            <div class="verification-container">
+                <a href="#" class="back-button" id="backButton">
+                    <i class="fas fa-arrow-left"></i> Back
+                </a>
+                
+                <div class="message success-message" id="successMessage">
+                    <i class="fas fa-check-circle"></i> Email verified successfully! Activating your account...
+                </div>
+                
+                <div class="message error-message" id="errorMessage">
+                    <i class="fas fa-exclamation-circle"></i> <span id="errorText"></span>
+                </div>
+                
+                <h2 class="form-title">Verify your email</h2>
+                <p class="form-subtitle">We sent a 6-digit code to your email address. Enter it below to activate your PDF OCR account.</p>
+                
+                <div class="email-display">
+                    <div class="email-label">Verification code sent to:</div>
+                    <div class="email-address" id="emailDisplay">alex.j@example.com</div>
+                    <div class="account-info">Activate your PDF OCR account</div>
+                </div>
+                
+                <div class="otp-inputs">
+                    <input type="text" class="otp-input" maxlength="1" data-index="0">
+                    <input type="text" class="otp-input" maxlength="1" data-index="1">
+                    <input type="text" class="otp-input" maxlength="1" data-index="2">
+                    <input type="text" class="otp-input" maxlength="1" data-index="3">
+                    <input type="text" class="otp-input" maxlength="1" data-index="4">
+                    <input type="text" class="otp-input" maxlength="1" data-index="5">
+                </div>
+                
+                <button class="verify-button" id="verifyButton" disabled>
+                    <i class="fas fa-check-circle"></i> Verify Email
+                </button>
+                
+                <div class="resend-section">
+                    <p class="resend-text">Didn't receive the code?</p>
+                    <button class="resend-button" id="resendButton" disabled>
+                        Resend <span class="timer" id="timerDisplay">(0:30)</span>
+                    </button>
+                </div>
+                
+                <div class="secure-badge">
+                    <i class="fas fa-shield-alt"></i> SECURE VERIFICATION
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>© 2024 PDF OCR Text Extractor. All rights reserved.</p>
+    </div>
+
+    <script>
+        const backButton = document.getElementById('backButton');
+        const verifyButton = document.getElementById('verifyButton');
+        const resendButton = document.getElementById('resendButton');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const otpInputs = document.querySelectorAll('.otp-input');
+        const emailDisplay = document.getElementById('emailDisplay');
+        
+        let countdown = 30;
+        let countdownInterval;
+        let generatedOtp = '';
+        
+        // Generate random OTP
+        generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+        console.log('Generated OTP (for demo):', generatedOtp);
+        
+        startCountdown();
+        
+        // Back button
+        backButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            if (confirm('Are you sure you want to go back? Your verification progress will be lost.')) {
+                alert('Redirecting back to signup...');
+            }
+        });
+        
+        // OTP input handling
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+                
+                if (this.value.length === 1 && index < otpInputs.length - 1) {
+                    otpInputs[index + 1].focus();
+                }
+                
+                if (this.value.length === 1) {
+                    this.classList.add('filled');
+                } else {
+                    this.classList.remove('filled');
+                }
+                
+                checkOtpCompletion();
+            });
+            
+            input.addEventListener('keydown', function(event) {
+                if (event.key === 'Backspace' && this.value.length === 0 && index > 0) {
+                    otpInputs[index - 1].focus();
+                }
+            });
+            
+            input.addEventListener('paste', function(event) {
+                event.preventDefault();
+                const pastedData = event.clipboardData.getData('text');
+                
+                if (/^\d{6}$/.test(pastedData)) {
+                    for (let i = 0; i < otpInputs.length; i++) {
+                        if (i < pastedData.length) {
+                            otpInputs[i].value = pastedData[i];
+                            otpInputs[i].classList.add('filled');
+                        }
+                    }
+                    otpInputs[otpInputs.length - 1].focus();
+                    checkOtpCompletion();
+                }
+            });
+        });
+        
+        function checkOtpCompletion() {
+            let allFilled = true;
+            otpInputs.forEach(input => {
+                if (input.value.length === 0) allFilled = false;
+            });
+            verifyButton.disabled = !allFilled;
+            return allFilled;
+        }
+        
+        // Verify button
+        verifyButton.addEventListener('click', function() {
+            let enteredOtp = '';
+            otpInputs.forEach(input => enteredOtp += input.value);
+            
+            verifyButton.innerHTML = '<span class="spinner"></span> Verifying...';
+            verifyButton.disabled = true;
+            
+            setTimeout(() => {
+                if (enteredOtp === generatedOtp) {
+                    showSuccess();
+                    setTimeout(() => {
+                        successMessage.innerHTML = '<i class="fas fa-check-circle"></i> Account activated! Redirecting to dashboard...';
+                        setTimeout(() => {
+                            alert('Account successfully activated! You would now be redirected to the dashboard.');
+                        }, 1500);
+                    }, 1000);
+                } else {
+                    showError('Invalid verification code. Please try again.');
+                    verifyButton.innerHTML = '<i class="fas fa-check-circle"></i> Verify Email';
+                    verifyButton.disabled = false;
+                    otpInputs.forEach(input => {
+                        input.value = '';
+                        input.classList.remove('filled');
+                    });
+                    otpInputs[0].focus();
+                }
+            }, 1500);
+        });
+        
+        // Resend button
+        resendButton.addEventListener('click', function() {
+            if (resendButton.disabled) return;
+            
+            resendButton.innerHTML = 'Resending...';
+            resendButton.disabled = true;
+            
+            generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+            console.log('New OTP (for demo):', generatedOtp);
+            
+            setTimeout(() => {
+                showSuccessMessage('New verification code sent! Check your email.');
+                otpInputs.forEach(input => {
+                    input.value = '';
+                    input.classList.remove('filled');
+                });
+                verifyButton.disabled = true;
+                verifyButton.innerHTML = '<i class="fas fa-check-circle"></i> Verify Email';
+                otpInputs[0].focus();
+                clearInterval(countdownInterval);
+                countdown = 30;
+                timerDisplay.textContent = `(${formatTime(countdown)})`;
+                startCountdown();
+            }, 1000);
+        });
+        
+        function startCountdown() {
+            resendButton.disabled = true;
+            updateTimerDisplay();
+            
+            countdownInterval = setInterval(() => {
+                countdown--;
+                updateTimerDisplay();
+                
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    resendButton.disabled = false;
+                    timerDisplay.textContent = '';
+                    resendButton.innerHTML = 'Resend';
+                }
+            }, 1000);
+        }
+        
+        function updateTimerDisplay() {
+            timerDisplay.textContent = `(${formatTime(countdown)})`;
+        }
+        
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function showSuccess() {
+            successMessage.style.display = 'flex';
+            errorMessage.style.display = 'none';
+        }
+        
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessage.style.display = 'flex';
+            successMessage.style.display = 'none';
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 5000);
+        }
+        
+        function showSuccessMessage(message) {
+            successMessage.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            successMessage.style.display = 'flex';
+            errorMessage.style.display = 'none';
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
