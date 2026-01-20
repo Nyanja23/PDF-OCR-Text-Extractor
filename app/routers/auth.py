@@ -178,13 +178,13 @@ async def google_callback(
         # Get user info
         user_info = token.get('userinfo')
         if not user_info:
-            raise HTTPException(status_code=400, detail="Failed to get user info")
+            return RedirectResponse(url="/auth/callback?error=user_info_not_found&error_description=Failed%20to%20get%20user%20info")
         
         email = user_info.get('email')
         name = user_info.get('name', '')
         
         if not email:
-            raise HTTPException(status_code=400, detail="Email not provided by Google")
+            return RedirectResponse(url="/auth/callback?error=no_email&error_description=Email%20not%20provided%20by%20Google")
         
         # Create or get user
         auth_service = AuthService(db)
@@ -195,9 +195,10 @@ async def google_callback(
         user_agent = request.headers.get("user-agent", "")
         _, session_id = auth_service.login(email, None, ip_address, user_agent)
         
-        # Set session cookie
-        response = RedirectResponse(url="/dashboard")
-        response.set_cookie(
+        # Redirect to callback page with authorization code
+        # The callback.html page will handle the redirect to dashboard
+        callback_response = RedirectResponse(url="/auth/callback?code=oauth_success")
+        callback_response.set_cookie(
             key="session_id",
             value=session_id,
             httponly=True,
@@ -206,10 +207,13 @@ async def google_callback(
             max_age=settings.SESSION_DURATION_DAYS * 24 * 60 * 60
         )
         
-        return response
+        return callback_response
     
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"OAuth failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        error_msg = str(e).replace(" ", "%20")
+        return RedirectResponse(url=f"/auth/callback?error=oauth_failed&error_description={error_msg}")
 
 
 @router.get("/me", response_model=UserResponse)

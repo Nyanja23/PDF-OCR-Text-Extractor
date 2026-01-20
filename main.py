@@ -12,7 +12,7 @@ import uvicorn
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.routers import auth, users, ocr
+from app.routers import auth, users, ocr, pages
 from app.middleware.rate_limit_middleware import RateLimitMiddleware
 from app.utils.file_handlers import cleanup_old_files
 import asyncio
@@ -80,16 +80,14 @@ app.add_middleware(
 
 app.add_middleware(RateLimitMiddleware)
 
-# Include routers (API-only backend; no templates)
+# Include routers
+# API routes
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(ocr.router, prefix="/api/ocr", tags=["OCR"])
 
-
-@app.get("/")
-async def root(request: Request):
-    """Redirect to landing page"""
-    return RedirectResponse(url="/docs")
+# Frontend pages routes
+app.include_router(pages.router, tags=["Pages"])
 
 
 @app.get("/health")

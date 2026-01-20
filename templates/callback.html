@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF OCR - Signing You In</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0a0b0d;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .animated-bg {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 20s ease infinite;
+            opacity: 0.15;
+            z-index: 0;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Floating orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            z-index: 1;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: #667eea;
+            top: -200px;
+            right: -200px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 350px;
+            height: 350px;
+            background: #764ba2;
+            bottom: -150px;
+            left: -150px;
+            animation-delay: 5s;
+        }
+
+        .orb-3 {
+            width: 300px;
+            height: 300px;
+            background: #4facfe;
+            top: 50%;
+            right: 10%;
+            animation-delay: 10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(50px, -50px); }
+            50% { transform: translate(-30px, 30px); }
+            75% { transform: translate(30px, 50px); }
+        }
+
+        .container {
+            position: relative;
+            display: flex;
+            min-height: 100vh;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            padding: 2rem;
+        }
+
+        .callback-container {
+            width: 100%;
+            max-width: 500px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .callback-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.8), transparent);
+        }
+
+        .icon-wrapper {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: #667eea;
+            animation: scaleIn 0.6s ease;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .arrow {
+            font-size: 1.5rem;
+            color: #667eea;
+            animation: slideRight 0.8s ease 0.3s both;
+        }
+
+        @keyframes slideRight {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .checkmark {
+            width: 80px;
+            height: 80px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: #10b981;
+            animation: scaleIn 0.6s ease 0.5s both;
+        }
+
+        .title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #ffffff 0%, #667eea 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: slideInDown 0.6s ease;
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 2rem;
+            font-size: 1rem;
+            line-height: 1.6;
+            animation: slideInDown 0.6s ease 0.1s both;
+        }
+
+        .user-info {
+            background: rgba(102, 126, 234, 0.05);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            animation: slideInUp 0.6s ease 0.2s both;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-avatar {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.5rem;
+            margin: 0 auto 1rem;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .user-email {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+
+        .loading-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 2rem 0;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: pulse 1.4s infinite;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes pulse {
+            0%, 60%, 100% {
+                opacity: 0.3;
+                transform: scale(1);
+            }
+            30% {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+        }
+
+        .status-text {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            animation: slideInDown 0.6s ease 0.3s both;
+        }
+
+        .status-message {
+            padding: 1rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            color: #10b981;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: none;
+            animation: slideInUp 0.4s ease;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .status-message.error {
+            background: rgba(255, 59, 48, 0.1);
+            border-color: rgba(255, 59, 48, 0.3);
+            color: #ff3b30;
+        }
+
+        .countdown {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 1.5rem;
+        }
+
+        .countdown-number {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .retry-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .retry-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+        }
+
+        .retry-btn.show {
+            display: inline-block;
+        }
+
+        /* Error state */
+        .error-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 59, 48, 0.1);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: #ff3b30;
+        }
+
+        .error-title {
+            color: #ff3b30;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .callback-container {
+                padding: 2rem;
+            }
+
+            .title {
+                font-size: 1.5rem;
+            }
+
+            .icon-wrapper {
+                gap: 0.5rem;
+            }
+
+            .icon, .checkmark, .error-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="animated-bg"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="container">
+        <div class="callback-container">
+            <!-- Processing State -->
+            <div id="processingState">
+                <div class="icon-wrapper">
+                    <div class="icon">
+                        <i class="fab fa-google"></i>
+                    </div>
+                    <div class="arrow">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                    <div class="icon" style="background: rgba(102, 126, 234, 0.2);">
+                        <i class="fas fa-file-pdf"></i>
+                    </div>
+                </div>
+
+                <h1 class="title">Verifying Your Identity</h1>
+                <p class="subtitle">Please wait while we authenticate your Google account and set up your session.</p>
+
+                <div class="loading-indicator">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+
+                <p class="status-text">Establishing secure connection...</p>
+            </div>
+
+            <!-- Success State -->
+            <div id="successState" style="display: none;">
+                <div class="icon-wrapper" style="margin-bottom: 1rem;">
+                    <div class="icon" style="background: rgba(102, 126, 234, 0.1);">
+                        <i class="fab fa-google"></i>
+                    </div>
+                    <div class="arrow">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div class="checkmark">
+                        <i class="fas fa-check"></i>
+                    </div>
+                </div>
+
+                <h1 class="title">Welcome Back!</h1>
+                
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">J</div>
+                    <div class="user-name" id="userName">John Doe</div>
+                    <div class="user-email" id="userEmail">john@example.com</div>
+                </div>
+
+                <div class="status-message show">
+                    <i class="fas fa-check-circle"></i> Authentication successful!
+                </div>
+
+                <p class="subtitle">You're all set. Redirecting you to your dashboard...</p>
+
+                <div class="countdown">
+                    Redirecting in <span class="countdown-number" id="countdown">3</span> seconds
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorState" style="display: none;">
+                <div class="error-icon">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+
+                <h1 class="title error-title">Authentication Failed</h1>
+                <p class="subtitle" id="errorMessage">
+                    Something went wrong during the authentication process. Please try logging in again.
+                </p>
+
+                <div class="status-message error show">
+                    <i class="fas fa-times-circle"></i> <span id="errorDetail">Unknown error</span>
+                </div>
+
+                <button class="retry-btn show" onclick="retryLogin()">
+                    <i class="fas fa-redo"></i> Try Again
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get URL parameters
+        const params = new URLSearchParams(window.location.search);
+        const error = params.get('error');
+        const error_description = params.get('error_description');
+        const code = params.get('code');
+        const state = params.get('state');
+
+        // Simulate fetching user data after successful auth
+        async function completeAuthentication() {
+            try {
+                // Check for errors from OAuth provider
+                if (error) {
+                    showErrorState(error_description || 'Authentication was cancelled or failed');
+                    return;
+                }
+
+                // If we have an auth code, exchange it for a session
+                if (code) {
+                    // In production, the backend should have already handled this
+                    // and redirected directly with session cookie set
+                    
+                    // Simulate user data (in production, fetch from /api/users/profile)
+                    const userData = {
+                        id: 1,
+                        full_name: 'John Doe',
+                        email: 'john@example.com',
+                        is_verified: true,
+                        is_oauth: true,
+                        oauth_provider: 'google'
+                    };
+
+                    // Show success state
+                    setTimeout(() => {
+                        showSuccessState(userData);
+                        
+                        // Countdown and redirect
+                        let seconds = 3;
+                        const countdownEl = document.getElementById('countdown');
+                        
+                        const timer = setInterval(() => {
+                            seconds--;
+                            countdownEl.textContent = seconds;
+                            
+                            if (seconds <= 0) {
+                                clearInterval(timer);
+                                window.location.href = '/dashboard';
+                            }
+                        }, 1000);
+                    }, 2000);
+                } else {
+                    // No code or error - something went wrong
+                    showErrorState('No authentication code received. Please try again.');
+                }
+            } catch (err) {
+                console.error('Authentication error:', err);
+                showErrorState('An unexpected error occurred. Please try again.');
+            }
+        }
+
+        function showSuccessState(userData) {
+            document.getElementById('processingState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'none';
+            document.getElementById('successState').style.display = 'block';
+
+            // Update user info
+            const initial = userData.full_name.charAt(0).toUpperCase();
+            document.getElementById('userAvatar').textContent = initial;
+            document.getElementById('userName').textContent = userData.full_name;
+            document.getElementById('userEmail').textContent = userData.email;
+        }
+
+        function showErrorState(message) {
+            document.getElementById('processingState').style.display = 'none';
+            document.getElementById('successState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'block';
+
+            document.getElementById('errorDetail').textContent = message;
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        function retryLogin() {
+            window.location.href = '/login';
+        }
+
+        // Start authentication process
+        completeAuthentication();
+
+        // Fallback: if stuck on processing for too long, show error
+        setTimeout(() => {
+            const processingState = document.getElementById('processingState');
+            if (processingState.style.display !== 'none' && 
+                document.getElementById('successState').style.display === 'none' &&
+                document.getElementById('errorState').style.display === 'none') {
+                // Still in processing state after 15 seconds - something's wrong
+                console.warn('Authentication taking too long, checking status...');
+                // In production, you might want to check the session status
+            }
+        }, 15000);
+    </script>
+</body>
+</html>
