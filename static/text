@@ -1,0 +1,10 @@
+your-project-folder/
+│
+├── hero.html
+├── upload.html
+├── documents.html
+├── history.html
+├── settings.html
+├── navigation.js
+├── shared.css
+└── features.html (optional)

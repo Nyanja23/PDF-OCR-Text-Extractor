@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Processing - PDF OCR</title>
+    <link rel="stylesheet" href="./shared.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Animated gradient background */
+        .gradient-bg {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 25%, #1d4ed8 50%, #1e40af 75%, #1e3a8a 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            opacity: 0.1;
+            z-index: 0;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Floating particles */
+        .particle {
+            position: fixed;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1.5rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            animation: slideDown 0.6s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+        }
+
+        /* Main Container */
+        .processing-container {
+            position: relative;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 8rem 5% 4rem;
+            z-index: 2;
+        }
+
+        /* Processing Header */
+        .processing-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .processing-title {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #ffffff 0%, #60a5fa 50%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+        }
+
+        .processing-subtitle {
+            font-size: clamp(1.1rem, 2vw, 1.3rem);
+            color: rgba(255, 255, 255, 0.8);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Processing Card */
+        .processing-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+
+        .card-header {
+            padding: 2.5rem 2.5rem 1.5rem;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.1) 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .file-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.8rem;
+        }
+
+        .file-details h3 {
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+        }
+
+        .file-meta {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+        }
+
+        /* Progress Section */
+        .progress-section {
+            margin-bottom: 2rem;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .progress-label {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .progress-percent {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .progress-bar {
+            height: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #60a5fa, #3b82f6);
+            border-radius: 6px;
+            width: 65%;
+            position: relative;
+            transition: width 0.5s ease;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Live Analysis */
+        .analysis-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title::before {
+            content: '📊';
+        }
+
+        .page-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.25rem;
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            border-radius: 999px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 1rem;
+        }
+
+        .extracting-status {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.25rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(59, 130, 246, 0.3);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Queue Table */
+        .queue-section {
+            margin-bottom: 2rem;
+        }
+
+        .queue-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .queue-table tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .queue-table tr:last-child {
+            border-bottom: none;
+        }
+
+        .queue-table td {
+            padding: 1.25rem;
+            vertical-align: top;
+        }
+
+        .page-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .page-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #3b82f6;
+            font-size: 1.2rem;
+        }
+
+        .page-number {
+            font-weight: 600;
+            color: #ffffff;
+            font-size: 1.1rem;
+        }
+
+        .page-stats {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 0.25rem;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+
+        .status-done {
+            color: #10b981;
+        }
+
+        .status-processing {
+            color: #f59e0b;
+        }
+
+        .status-pending {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Card Body */
+        .card-body {
+            padding: 2.5rem;
+        }
+
+        /* Footer Actions */
+        .processing-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 2.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        .btn {
+            padding: 0.875rem 1.75rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+            outline: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border: 2px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+            transform: translateY(-2px);
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+
+        .page-display {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+        }
+
+        /* Footer - EXACT COPY FROM YOUR CODE */
+        footer {
+            position: relative;
+            padding: 4rem 5% 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 2;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 3rem;
+            max-width: 1200px;
+            margin: 0 auto 3rem;
+        }
+
+        .footer-section h4 {
+            margin-bottom: 1.5rem;
+            font-size: 1.2rem;
+        }
+
+        .footer-section a {
+            display: block;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            margin-bottom: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: #3b82f6;
+            transform: translateX(5px);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Status Badges */
+        .status-badges {
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            right: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            z-index: 10;
+        }
+
+        .status-badge {
+            padding: 0.6rem 1.2rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+
+        .scanning-badge {
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .accuracy-badge {
+            background: rgba(59, 130, 246, 0.8);
+            color: white;
+            border: 1px solid #3b82f6;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .processing-container {
+                padding: 7rem 4% 2rem;
+            }
+
+            .processing-title {
+                font-size: 2.2rem;
+            }
+
+            .processing-subtitle {
+                font-size: 1.1rem;
+            }
+
+            .file-info {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+
+            .progress-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .progress-percent {
+                font-size: 2rem;
+            }
+
+            .processing-footer {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .queue-table td {
+                padding: 1rem 0.5rem;
+            }
+
+            .page-info {
+                flex-direction: column;
+                text-align: center;
+                gap: 0.5rem;
+            }
+
+            .status {
+                justify-content: center;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .processing-container {
+                padding: 6rem 3% 1rem;
+            }
+
+            .processing-title {
+                font-size: 1.8rem;
+            }
+
+            .card-body, .card-header {
+                padding: 1.5rem;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .file-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<script src="./navigation.js"></script>
+<body>
+    <div class="gradient-bg"></div>
+
+    <nav>
+        <a href="./hero.html" class="logo">PDF OCR</a>
+    </nav>
+
+    <main class="processing-container">
+        <div class="processing-header">
+            <h1 class="processing-title">Processing Your Document</h1>
+            <p class="processing-subtitle">Your file is being converted into editable text with our AI-powered OCR technology. This usually takes 15-30 seconds.</p>
+        </div>
+
+        <div class="processing-card">
+            <div class="card-header">
+                <div class="file-info">
+                    <div class="file-icon">📄</div>
+                    <div class="file-details">
+                        <h3>invoice_2023_archive.pdf</h3>
+                        <div class="file-meta">8 pages • 4.2 MB • Uploaded just now</div>
+                    </div>
+                </div>
+
+                <div class="progress-section">
+                    <div class="progress-header">
+                        <div class="progress-label">Total Progress</div>
+                        <div class="progress-percent" id="progressPercent">65%</div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="analysis-section">
+                    <div class="section-title">Live Analysis</div>
+                    <div class="page-indicator">
+                        📄
+                        <span id="currentPage">PAGE 3 OF 8</span>
+                    </div>
+                    <div class="extracting-status">
+                        <div class="spinner"></div>
+                        <span>Extracting text blocks...</span>
+                    </div>
+                </div>
+
+                <div class="queue-section">
+                    <div class="section-title">Page Queue</div>
+                    <table class="queue-table">
+                        <tr>
+                            <td>
+                                <div class="page-info">
+                                    <div class="page-icon">✓</div>
+                                    <div>
+                                        <div class="page-number">Page 1</div>
+                                        <div class="page-stats">124 text blocks found</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="status status-done">
+                                    ✓ Done
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="page-info">
+                                    <div class="page-icon">⚡</div>
+                                    <div>
+                                        <div class="page-number">Page 2</div>
+                                        <div class="page-stats">88 text blocks found</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="status status-processing">
+                                    ↻ Processing
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="page-info">
+                                    <div class="page-icon">⚡</div>
+                                    <div>
+                                        <div class="page-number">Page 3</div>
+                                        <div class="page-stats">Processing...</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="status status-processing">
+                                    ↻ In Progress
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="page-info">
+                                    <div class="page-icon">⏱️</div>
+                                    <div>
+                                        <div class="page-number">Page 4</div>
+                                        <div class="page-stats">Waiting for processing</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="status status-pending">
+                                    ⏱️ Pending
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="processing-footer">
+                <button class="btn btn-secondary" id="minimizeBtn">
+                    📱 Minimize
+                </button>
+                <div class="page-display">Currently viewing: Page 4</div>
+                <button class="btn btn-danger" id="cancelBtn">
+                    ✕ Cancel Processing
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- EXACT COPY OF YOUR FOOTER FROM PROVIDED CODE -->
+    <footer id="support">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>PDF OCR</h4>
+                <p style="color: rgba(255, 255, 255, 0.6);">Professional-grade text extraction from any document.</p>
+            </div>
+            <div class="footer-section">
+                <h4>Legal</h4>
+                <a href="#privacy">Privacy Policy</a>
+                <a href="#terms">Terms of Service</a>
+            </div>
+            <div class="footer-section">
+                <h4>Support</h4>
+                <a href="#contact">Contact Us</a>
+                <a href="#help">Help Center</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2024 PDF OCR Text Extractor. All rights reserved. Built for efficiency.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Create floating particles
+        function createParticles() {
+            const particleCount = 20;
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                const size = Math.random() * 80 + 30;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animation = `float ${Math.random() * 20 + 10}s ease-in-out infinite`;
+                particle.style.animationDelay = Math.random() * 5 + 's';
+                document.body.appendChild(particle);
+            }
+        }
+
+        // Float animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes float {
+                0%, 100% { transform: translate(0, 0) rotate(0deg); }
+                25% { transform: translate(30px, -30px) rotate(90deg); }
+                50% { transform: translate(0, -60px) rotate(180deg); }
+                75% { transform: translate(-30px, -30px) rotate(270deg); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        createParticles();
+
+        // DOM elements
+        const progressPercent = document.getElementById('progressPercent');
+        const progressFill = document.getElementById('progressFill');
+        const currentPage = document.getElementById('currentPage');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const minimizeBtn = document.getElementById('minimizeBtn');
+        
+        // Simulate progress updates
+        let progress = 65;
+        let currentPageNum = 3;
+        const totalPages = 8;
+        
+        function updateProgress() {
+            // Increase progress randomly
+            if (progress < 100) {
+                progress += Math.random() * 5;
+                if (progress > 100) progress = 100;
+                
+                progressPercent.textContent = `${Math.round(progress)}%`;
+                progressFill.style.width = `${progress}%`;
+                
+                // Update page when progress reaches certain thresholds
+                if (progress > 70 && currentPageNum === 3) {
+                    currentPageNum = 4;
+                    updatePageDisplay();
+                } else if (progress > 85 && currentPageNum === 4) {
+                    currentPageNum = 5;
+                    updatePageDisplay();
+                }
+            }
+            
+            // Randomly update page processing status
+            updateQueueStatus();
+        }
+        
+        function updatePageDisplay() {
+            currentPage.textContent = `PAGE ${currentPageNum} OF ${totalPages}`;
+            
+            // Update the queue table to show current page as processing
+            const queueRows = document.querySelectorAll('.queue-table tr');
+            queueRows.forEach((row, index) => {
+                const statusDiv = row.querySelector('.status');
+                const pageStats = row.querySelector('.page-stats');
+                const pageIcon = row.querySelector('.page-icon');
+                
+                if (index === currentPageNum - 1) {
+                    // Current page
+                    statusDiv.innerHTML = '↻ In Progress';
+                    statusDiv.className = 'status status-processing';
+                    if (pageStats) {
+                        pageStats.textContent = 'Processing...';
+                        pageStats.style.color = '#f59e0b';
+                    }
+                    if (pageIcon) {
+                        pageIcon.textContent = '⚡';
+                    }
+                } else if (index < currentPageNum - 1) {
+                    // Completed pages
+                    statusDiv.innerHTML = '✓ Done';
+                    statusDiv.className = 'status status-done';
+                    if (pageIcon) {
+                        pageIcon.textContent = '✓';
+                    }
+                    if (pageStats) {
+                        if (index === 0) {
+                            pageStats.textContent = '124 text blocks found';
+                        } else if (index === 1) {
+                            pageStats.textContent = '88 text blocks found';
+                        }
+                        pageStats.style.color = 'rgba(255, 255, 255, 0.7)';
+                    }
+                } else {
+                    // Pending pages
+                    statusDiv.innerHTML = '⏱️ Pending';
+                    statusDiv.className = 'status status-pending';
+                    if (pageIcon) {
+                        pageIcon.textContent = '⏱️';
+                    }
+                    if (pageStats) {
+                        pageStats.textContent = 'Waiting for processing';
+                        pageStats.style.color = 'rgba(255, 255, 255, 0.7)';
+                    }
+                }
+            });
+        }
+        
+        function updateQueueStatus() {
+            // Randomly update text block counts for completed pages
+            const completedRows = document.querySelectorAll('.status-done');
+            completedRows.forEach(row => {
+                const pageStats = row.parentElement.parentElement.querySelector('.page-stats');
+                if (pageStats && Math.random() > 0.7) {
+                    const currentText = pageStats.textContent;
+                    if (currentText.includes('text blocks found')) {
+                        const currentCount = parseInt(currentText.match(/\d+/)[0]);
+                        const newCount = currentCount + Math.floor(Math.random() * 5);
+                        pageStats.textContent = `${newCount} text blocks found`;
+                    }
+                }
+            });
+        }
+        
+        // Cancel button functionality
+        cancelBtn.addEventListener('click', function() {
+            if (confirm('Are you sure you want to cancel the OCR processing?')) {
+                // Show cancellation effect
+                cancelBtn.innerHTML = '⏹️ Cancelling...';
+                cancelBtn.style.background = 'rgba(239, 68, 68, 0.2)';
+                cancelBtn.disabled = true;
+                
+                // Stop progress updates
+                clearInterval(progressInterval);
+                
+                // Show cancellation message
+                setTimeout(() => {
+                    cancelBtn.innerHTML = '⏹️ Processing Cancelled';
+                    cancelBtn.style.background = 'rgba(239, 68, 68, 0.1)';
+                    cancelBtn.style.color = 'rgba(255, 255, 255, 0.6)';
+                    cancelBtn.style.cursor = 'default';
+                    cancelBtn.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+                    
+                    // Update progress bar to show cancellation
+                    progressFill.style.background = 'linear-gradient(90deg, #1e40af, #1e3a8a)';
+                    progressFill.style.animation = 'none';
+                    
+                    // Update status
+                    const extractingStatus = document.querySelector('.extracting-status');
+                    extractingStatus.innerHTML = `
+                        <div style="color: rgba(255, 255, 255, 0.6);">⏹️</div>
+                        <span style="color: rgba(255, 255, 255, 0.6);">Processing cancelled</span>
+                    `;
+                    
+                    // Update page indicator
+                    currentPage.innerHTML = `
+                        ⏹️ PROCESSING STOPPED
+                    `;
+                }, 800);
+            }
+        });
+        
+        // Minimize button functionality
+        minimizeBtn.addEventListener('click', function() {
+            console.log('Minimize processing view');
+            alert('Processing minimized. You can continue browsing while we process your document.');
+        });
+        
+        // Initialize
+        const progressInterval = setInterval(updateProgress, 2000);
+        
+        // Add some initial dynamic text updates
+        setTimeout(() => {
+            // Simulate page 2 completion
+            const page2Row = document.querySelectorAll('.queue-table tr')[1];
+            const page2Status = page2Row.querySelector('.status');
+            const page2Stats = page2Row.querySelector('.page-stats');
+            const page2Icon = page2Row.querySelector('.page-icon');
+            
+            page2Status.innerHTML = '✓ Done';
+            page2Status.className = 'status status-done';
+            page2Stats.textContent = '92 text blocks found';
+            page2Icon.textContent = '✓';
+        }, 3000);
+        // Navigation functionality
+function navigateTo(page) {
+    const pages = {
+        'home': './hero.html',
+        'upload': './upload.html',
+        'documents': './documents.html',
+        'settings': './settings.html'
+    };
+    
+    if (pages[page]) {
+        window.location.href = pages[page];
+    }
+}
+
+// Initialize navigation
+document.addEventListener('DOMContentLoaded', function() {
+    // Bottom navigation
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const target = this.getAttribute('data-target');
+            navigateTo(target);
+        });
+    });
+    
+    // Header navigation (if exists)
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const href = this.getAttribute('href');
+            window.location.href = href;
+        });
+    });
+    
+    // User profile click
+    document.getElementById('userProfile')?.addEventListener('click', function() {
+        navigateTo('settings');
+    });
+});
+    </script>
+
+    <nav class="footer-nav">
+    <!-- Bottom navigation will be auto-generated -->
+</nav>
+
+<script src="./navigation.js"></script>
+</body>
+</html>
