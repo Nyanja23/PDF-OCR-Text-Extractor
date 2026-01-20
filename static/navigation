@@ -1,0 +1,140 @@
+// navigation.js - Central navigation controller
+
+// Page configuration
+const PAGES = {
+    home: { path: './hero.html', title: 'PDF OCR Pro' },
+    upload: { path: './upload.html', title: 'Upload Documents' },
+    documents: { path: './documents.html', title: 'My Documents' },
+    history: { path: './history.html', title: 'Document History' },
+    settings: { path: './settings.html', title: 'Account Settings' }
+};
+
+// Initialize navigation system
+function initNavigation() {
+    // Set current page
+    setCurrentPage();
+    
+    // Initialize header navigation
+    initHeaderNavigation();
+    
+    // Initialize bottom navigation
+    initBottomNavigation();
+    
+    // Initialize user profile navigation
+    initUserProfile();
+}
+
+// Determine current page from URL
+function setCurrentPage() {
+    const currentPath = window.location.pathname;
+    const currentPage = Object.keys(PAGES).find(page => 
+        currentPath.includes(PAGES[page].path.replace('./', '')) || 
+        (page === 'home' && (currentPath.endsWith('/') || currentPath.includes('hero.html')))
+    );
+    
+    sessionStorage.setItem('currentPage', currentPage || 'home');
+    document.title = PAGES[currentPage]?.title || 'PDF OCR Pro';
+}
+
+// Initialize header navigation
+function initHeaderNavigation() {
+    const currentPage = sessionStorage.getItem('currentPage') || 'home';
+    const navContainer = document.querySelector('nav');
+    
+    if (!navContainer) return;
+    
+    // Create navigation links
+    navContainer.innerHTML = `
+        <a class="nav-link ${currentPage === 'home' ? 'active' : ''}" href="${PAGES.home.path}">Home</a>
+        <a class="nav-link ${currentPage === 'upload' ? 'active' : ''}" href="${PAGES.upload.path}">Upload</a>
+        <a class="nav-link ${currentPage === 'documents' ? 'active' : ''}" href="${PAGES.documents.path}">Documents</a>
+        <a class="nav-link ${currentPage === 'history' ? 'active' : ''}" href="${PAGES.history.path}">History</a>
+        <a class="nav-link ${currentPage === 'settings' ? 'active' : ''}" href="${PAGES.settings.path}">Settings</a>
+        <a class="btn-header" href="${PAGES.upload.path}">
+            <i class="fas fa-plus"></i>
+            New Upload
+        </a>
+    `;
+    
+    // Add click handlers
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            navigateToPage(this.getAttribute('href'));
+        });
+    });
+    
+    // Add button handler
+    const headerBtn = document.querySelector('.btn-header');
+    if (headerBtn) {
+        headerBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            navigateToPage(this.getAttribute('href'));
+        });
+    }
+}
+
+// Initialize bottom navigation
+function initBottomNavigation() {
+    const currentPage = sessionStorage.getItem('currentPage') || 'home';
+    const footerNav = document.querySelector('.footer-nav');
+    
+    if (!footerNav) return;
+    
+    footerNav.innerHTML = `
+        <div class="nav-items">
+            <button class="nav-item ${currentPage === 'home' ? 'active' : ''}" data-target="home">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </button>
+            <button class="nav-item ${currentPage === 'upload' ? 'active' : ''}" data-target="upload">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span>Upload</span>
+            </button>
+            <button class="nav-item ${currentPage === 'documents' ? 'active' : ''}" data-target="documents">
+                <i class="fas fa-folder-open"></i>
+                <span>Documents</span>
+            </button>
+            <button class="nav-item ${currentPage === 'history' ? 'active' : ''}" data-target="history">
+                <i class="fas fa-history"></i>
+                <span>History</span>
+            </button>
+            <button class="nav-item ${currentPage === 'settings' ? 'active' : ''}" data-target="settings">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </button>
+        </div>
+    `;
+    
+    // Add click handlers
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const target = this.getAttribute('data-target');
+            navigateToPage(PAGES[target].path);
+        });
+    });
+}
+
+// Initialize user profile
+function initUserProfile() {
+    const userProfile = document.getElementById('userProfile');
+    if (userProfile) {
+        userProfile.addEventListener('click', function() {
+            navigateToPage(PAGES.settings.path);
+        });
+    }
+}
+
+// Navigate to a page with smooth transition
+function navigateToPage(path) {
+    // Add page transition effect
+    document.body.style.opacity = '0.7';
+    document.body.style.transition = 'opacity 0.3s ease';
+    
+    setTimeout(() => {
+        window.location.href = path;
+    }, 150);
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', initNavigation);
