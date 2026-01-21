@@ -436,6 +436,38 @@
             margin-top: 0.5rem;
         }
 
+        /* Input wrapper and password toggle */
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper .form-input {
+            padding-right: 48px; /* room for toggle */
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .password-toggle:hover {
+            background: rgba(255, 255, 255, 0.03);
+            color: #667eea;
+        }
+
+
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -739,18 +771,27 @@
                         <form id="securityForm">
                             <div class="form-group">
                                 <label class="form-label">Current Password</label>
-                                <input type="password" class="form-input" id="currentPassword" placeholder="Enter your current password" required>
+                                <div class="input-wrapper">
+                                    <input type="password" class="form-input" id="currentPassword" placeholder="Enter your current password" required>
+                                    <button type="button" class="password-toggle" id="toggleCurrentPassword"><i class="far fa-eye"></i></button>
+                                </div>
                             </div>
 
                             <div class="form-group">
                                 <label class="form-label">New Password</label>
-                                <input type="password" class="form-input" id="newPassword" placeholder="Enter new password" required>
+                                <div class="input-wrapper">
+                                    <input type="password" class="form-input" id="newPassword" placeholder="Enter new password" required>
+                                    <button type="button" class="password-toggle" id="toggleNewPassword"><i class="far fa-eye"></i></button>
+                                </div>
                                 <div class="form-help-text">At least 8 characters with uppercase, lowercase, and numbers</div>
                             </div>
 
                             <div class="form-group">
                                 <label class="form-label">Confirm Password</label>
-                                <input type="password" class="form-input" id="confirmPassword" placeholder="Confirm new password" required>
+                                <div class="input-wrapper">
+                                    <input type="password" class="form-input" id="confirmPassword" placeholder="Confirm new password" required>
+                                    <button type="button" class="password-toggle" id="toggleConfirmPassword"><i class="far fa-eye"></i></button>
+                                </div>
                             </div>
 
                             <div class="button-group">
@@ -905,27 +946,65 @@
             document.getElementById('profileForm').reset();
         }
 
-        // Security form
-        document.getElementById('securityForm').addEventListener('submit', function(e) {
+        // Security form - call backend to actually change password
+        document.getElementById('securityForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            const currentPassword = document.getElementById('currentPassword').value;
             const newPassword = document.getElementById('newPassword').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
 
+            const notification = document.getElementById('securityNotification');
+
             if (newPassword !== confirmPassword) {
-                const notification = document.getElementById('securityNotification');
                 notification.textContent = '✗ Passwords do not match';
                 notification.classList.add('show', 'error');
                 setTimeout(() => notification.classList.remove('show', 'error'), 3000);
                 return;
             }
 
-            const notification = document.getElementById('securityNotification');
-            notification.textContent = '✓ Password changed successfully!';
-            notification.classList.add('show');
-            setTimeout(() => {
-                notification.classList.remove('show');
-                document.getElementById('securityForm').reset();
-            }, 3000);
+            // Client-side strength check
+            if (!validatePassword()) {
+                notification.textContent = '✗ Please meet all password requirements';
+                notification.classList.add('show', 'error');
+                setTimeout(() => notification.classList.remove('show', 'error'), 3000);
+                return;
+            }
+
+            // Call backend API
+            try {
+                const resp = await fetch('/api/users/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    const msg = err.detail || err.message || 'Failed to change password';
+                    notification.textContent = `✗ ${msg}`;
+                    notification.classList.add('show', 'error');
+                    setTimeout(() => notification.classList.remove('show', 'error'), 4000);
+                    return;
+                }
+
+                // Success — show message then redirect to login to force re-authentication
+                notification.textContent = '✓ Password changed successfully. Redirecting to login...';
+                notification.classList.add('show');
+                setTimeout(() => {
+                    // Clear any client-side session artifacts and navigate to login
+                    try { localStorage.removeItem('session_id'); } catch (e) {}
+                    window.location.href = '/login';
+                }, 1800);
+            } catch (error) {
+                console.error('Change password error:', error);
+                notification.textContent = '✗ Error changing password. Try again.';
+                notification.classList.add('show', 'error');
+                setTimeout(() => notification.classList.remove('show', 'error'), 4000);
+            }
         });
 
         function logoutAllDevices() {
@@ -970,6 +1049,51 @@
 
         // Initialize
         loadUserSettings();
+
+        // Password toggle helpers for security inputs
+        function attachPasswordToggle(toggleId, inputId) {
+            const btn = document.getElementById(toggleId);
+            const input = document.getElementById(inputId);
+            if (!btn || !input) return;
+            btn.addEventListener('click', function() {
+                const icon = this.querySelector('i');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    if (icon) {
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                    }
+                } else {
+                    input.type = 'password';
+                    if (icon) {
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                    }
+                }
+            });
+        }
+
+        // Attach toggles if elements exist
+        attachPasswordToggle('toggleCurrentPassword', 'currentPassword');
+        attachPasswordToggle('toggleNewPassword', 'newPassword');
+        attachPasswordToggle('toggleConfirmPassword', 'confirmPassword');
+
+        // Simple client-side password validation used by the security form
+        function validatePassword() {
+            const newPwdEl = document.getElementById('newPassword');
+            const confirmPwdEl = document.getElementById('confirmPassword');
+            if (!newPwdEl || !confirmPwdEl) return true;
+
+            const newPassword = newPwdEl.value;
+            const confirmPassword = confirmPwdEl.value;
+
+            const hasMinLength = newPassword.length >= 8;
+            const hasNumber = /\d/.test(newPassword);
+            const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
+            const passwordsMatch = newPassword === confirmPassword && newPassword.length > 0;
+
+            return hasMinLength && hasNumber && hasSpecial && passwordsMatch;
+        }
     </script>
 </body>
 </html>

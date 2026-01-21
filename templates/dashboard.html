@@ -157,6 +157,102 @@
             color: rgba(255, 255, 255, 0.6);
         }
 
+        .user-menu {
+            position: relative;
+        }
+
+        .user-profile-trigger {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .user-profile-trigger:hover {
+            background: rgba(102, 126, 234, 0.15) !important;
+            border-color: rgba(102, 126, 234, 0.3) !important;
+        }
+
+        .user-profile-trigger i {
+            margin-left: 0.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .user-profile-trigger.active i {
+            transform: rotate(180deg);
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: rgba(20, 25, 50, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 12px;
+            min-width: 220px;
+            margin-top: 0.75rem;
+            display: none;
+            flex-direction: column;
+            z-index: 1001;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            animation: dropdownSlide 0.3s ease;
+        }
+
+        @keyframes dropdownSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-dropdown.active {
+            display: flex;
+        }
+
+        .dropdown-item {
+            padding: 1rem 1.5rem;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(102, 126, 234, 0.15);
+            color: #667eea;
+            padding-left: 1.75rem;
+        }
+
+        .dropdown-item i {
+            width: 18px;
+            text-align: center;
+        }
+
+        .logout-item {
+            color: rgba(255, 107, 107, 0.8);
+        }
+
+        .logout-item:hover {
+            background: rgba(255, 59, 48, 0.15);
+            color: #ff6b6b;
+        }
+
         .logout-btn {
             padding: 0.75rem 1.5rem;
             background: rgba(255, 59, 48, 0.1);
@@ -648,16 +744,24 @@
                 <span>PDF OCR Pro</span>
             </div>
             <div class="header-actions">
-                <div class="user-info">
-                    <div class="user-avatar" id="userInitial">J</div>
-                    <div class="user-details">
-                        <div class="user-name" id="userName">John Doe</div>
-                        <div class="user-email" id="userEmail">john@example.com</div>
+                <div class="user-menu">
+                    <div class="user-info user-profile-trigger" id="userProfileTrigger">
+                        <div class="user-avatar" id="userInitial">J</div>
+                        <div class="user-details">
+                            <div class="user-name" id="userName">John Doe</div>
+                            <div class="user-email" id="userEmail">john@example.com</div>
+                        </div>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="user-dropdown" id="userDropdown">
+                        <a href="/settings" class="dropdown-item">
+                            <i class="fas fa-user-cog"></i> Settings & Profile
+                        </a>
+                        <button class="dropdown-item logout-item" id="logoutBtn">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
                     </div>
                 </div>
-                <button class="logout-btn" id="logoutBtn">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
             </div>
         </div>
     </header>
@@ -923,21 +1027,36 @@
         });
 
         // Load user info
-        function loadUserInfo() {
-            // In production, fetch from /api/users/profile
+        async function loadUserInfo() {
             const userInitial = document.getElementById('userInitial');
             const userName = document.getElementById('userName');
             const userEmail = document.getElementById('userEmail');
             
-            // Simulated data
-            const user = {
-                full_name: 'John Doe',
-                email: 'john@example.com'
-            };
+            try {
+                // Fetch user profile from backend
+                const response = await fetch('/api/users/profile', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include' // Send cookies for authentication
+                });
 
-            userInitial.textContent = user.full_name.charAt(0).toUpperCase();
-            userName.textContent = user.full_name;
-            userEmail.textContent = user.email;
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user profile');
+                }
+
+                const user = await response.json();
+                
+                // Update user info
+                userInitial.textContent = user.full_name.charAt(0).toUpperCase();
+                userName.textContent = user.full_name;
+                userEmail.textContent = user.email;
+            } catch (error) {
+                console.error('Error loading user info:', error);
+                // Redirect to login if not authenticated
+                window.location.href = '/login';
+            }
         }
 
         // Logout
@@ -946,6 +1065,31 @@
                 // In production: POST to /api/auth/logout
                 localStorage.removeItem('session_id');
                 window.location.href = '/login';
+            }
+        });
+
+        // User profile dropdown
+        const userProfileTrigger = document.getElementById('userProfileTrigger');
+        const userDropdown = document.getElementById('userDropdown');
+
+        userProfileTrigger.addEventListener('click', () => {
+            userDropdown.classList.toggle('active');
+            userProfileTrigger.classList.toggle('active');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!userProfileTrigger.contains(e.target) && !userDropdown.contains(e.target)) {
+                userDropdown.classList.remove('active');
+                userProfileTrigger.classList.remove('active');
+            }
+        });
+
+        // Close dropdown when clicking on a link
+        userDropdown.addEventListener('click', (e) => {
+            if (e.target.tagName === 'A') {
+                userDropdown.classList.remove('active');
+                userProfileTrigger.classList.remove('active');
             }
         });
 
