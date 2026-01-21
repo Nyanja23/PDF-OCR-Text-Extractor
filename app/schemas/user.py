@@ -42,12 +42,19 @@ class UserResponse(UserBase):
     id: int
     full_name: Optional[str]
     is_verified: bool
-    is_oauth: bool
+    is_oauth: bool = False
     created_at: datetime
     
     class Config:
         # orm_mode = True
         from_attributes = True
+    
+    @validator('is_oauth', pre=True, always=True)
+    def validate_is_oauth(cls, v):
+        """Ensure is_oauth is always a boolean, defaulting to False if None"""
+        if v is None:
+            return False
+        return bool(v)
 
 
 class UserUpdate(BaseModel):
@@ -99,9 +106,3 @@ class PasswordReset(BaseModel):
         if not re.search(r'[!@#$%^&*(),.?":{}|<>]', v):
             raise ValueError('Password must contain at least one special character')
         return v
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user: UserResponse

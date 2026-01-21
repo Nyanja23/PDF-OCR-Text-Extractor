@@ -40,19 +40,19 @@ class AuthService:
         if existing_user:
             raise ConflictException("Email already registered")
         
-        # Create new user
+        # Create new user with email verification required
         user = User(
             email=user_data.email,
             hashed_password=hash_password(user_data.password),
             full_name=user_data.full_name,
-            is_verified=False
+            is_verified=False  # Email verification required
         )
         
         self.db.add(user)
         self.db.commit()
         self.db.refresh(user)
         
-        # Generate and send OTP
+        # Generate and send OTP for email verification
         otp_code = self._create_otp(user.id, "email_verification")
         send_otp_email(user.email, otp_code, "email_verification")
         
@@ -105,6 +105,10 @@ class AuthService:
         
         if not user:
             raise UnauthorizedException("Invalid credentials")
+        
+        # Check if email is verified
+        if not user.is_verified:
+            raise UnauthorizedException("Please verify your email before logging in. Check your inbox for the verification code.")
         
         # Check if account is locked
         if user.is_locked():

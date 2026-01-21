@@ -80,34 +80,42 @@ async def login(
     db: Session = Depends(get_db)
 ):
     """Login user"""
-    auth_service = AuthService(db)
-    
-    # Get client info
-    ip_address = request.client.host
-    user_agent = request.headers.get("user-agent", "")
-    
-    # Authenticate user
-    user, session_id = auth_service.login(
-        login_data.email,
-        login_data.password,
-        ip_address,
-        user_agent
-    )
-    
-    # Set session cookie
-    response.set_cookie(
-        key="session_id",
-        value=session_id,
-        httponly=True,
-        secure=not settings.DEBUG,  # HTTPS only in production
-        samesite="lax",
-        max_age=settings.SESSION_DURATION_DAYS * 24 * 60 * 60
-    )
-    
-    return TokenResponse(
-        access_token=session_id,
-        user=UserResponse.from_orm(user)
-    )
+    try:
+        auth_service = AuthService(db)
+        
+        # Get client info
+        ip_address = request.client.host
+        user_agent = request.headers.get("user-agent", "")
+        
+        # Authenticate user
+        user, session_id = auth_service.login(
+            login_data.email,
+            login_data.password,
+            ip_address,
+            user_agent
+        )
+        
+        # Set session cookie
+        response.set_cookie(
+            key="session_id",
+            value=session_id,
+            httponly=True,
+            secure=not settings.DEBUG,  # HTTPS only in production
+            samesite="lax",
+            max_age=settings.SESSION_DURATION_DAYS * 24 * 60 * 60
+        )
+        
+        return TokenResponse(
+            access_token=session_id,
+            user=UserResponse.from_orm(user)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        print("\n[LOGIN ERROR] Exception occurred:")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
 
 
 @router.post("/logout")

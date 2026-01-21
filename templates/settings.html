@@ -934,16 +934,52 @@
         }
 
         // Profile form
-        document.getElementById('profileForm').addEventListener('submit', function(e) {
+        document.getElementById('profileForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const notification = document.getElementById('profileNotification');
-            notification.textContent = '✓ Profile updated successfully!';
-            notification.classList.add('show');
-            setTimeout(() => notification.classList.remove('show'), 3000);
+            
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const email = document.getElementById('profileEmailInput').value.trim();
+            
+            try {
+                const resp = await fetch('/api/users/profile', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        full_name: `${firstName} ${lastName}`.trim(),
+                        email: email
+                    })
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    const msg = err.detail || err.message || 'Failed to update profile';
+                    notification.textContent = `✗ ${msg}`;
+                    notification.classList.add('show', 'error');
+                    setTimeout(() => notification.classList.remove('show', 'error'), 4000);
+                    return;
+                }
+
+                const user = await resp.json();
+                notification.textContent = '✓ Profile updated successfully!';
+                notification.classList.add('show');
+                
+                // Update display with new data
+                loadUserSettings();
+                
+                setTimeout(() => notification.classList.remove('show'), 3000);
+            } catch (error) {
+                console.error('Profile update error:', error);
+                notification.textContent = '✗ Error updating profile. Try again.';
+                notification.classList.add('show', 'error');
+                setTimeout(() => notification.classList.remove('show', 'error'), 4000);
+            }
         });
 
         function resetProfileForm() {
-            document.getElementById('profileForm').reset();
+            loadUserSettings();
         }
 
         // Security form - call backend to actually change password
@@ -1032,19 +1068,46 @@
         }
 
         // Load user data on page load
-        function loadUserSettings() {
-            // In production, fetch from /api/users/profile
-            const user = {
-                full_name: 'John Doe',
-                email: 'john.doe@example.com',
-                bio: 'PDF enthusiast and OCR tester'
-            };
+        async function loadUserSettings() {
+            try {
+                const resp = await fetch('/api/users/profile', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
 
-            const initial = user.full_name.charAt(0).toUpperCase();
-            document.getElementById('profileAvatar').textContent = initial;
-            document.getElementById('profileName').textContent = user.full_name;
-            document.getElementById('profileEmail').textContent = user.email;
-            document.getElementById('profileEmailInput').value = user.email;
+                if (!resp.ok) {
+                    console.error('Failed to load user profile');
+                    return;
+                }
+
+                const user = await resp.json();
+                
+                // Parse full_name into first and last names
+                const nameParts = user.full_name ? user.full_name.split(' ') : ['', ''];
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || '';
+                
+                const initial = user.full_name ? user.full_name.charAt(0).toUpperCase() : '?';
+                document.getElementById('profileAvatar').textContent = initial;
+                document.getElementById('profileName').textContent = user.full_name || 'User';
+                document.getElementById('profileEmail').textContent = user.email;
+                document.getElementById('profileEmailInput').value = user.email;
+                document.getElementById('firstName').value = firstName;
+                document.getElementById('lastName').value = lastName;
+                
+                // Update verification status
+                const statusEl = document.getElementById('profileStatus');
+                if (user.is_verified) {
+                    statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Verified';
+                    statusEl.style.color = '#10b981';
+                } else {
+                    statusEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Not Verified';
+                    statusEl.style.color = '#f59e0b';
+                }
+            } catch (error) {
+                console.error('Error loading user settings:', error);
+            }
         }
 
         // Initialize

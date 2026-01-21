@@ -22,11 +22,11 @@ import asyncio
 async def lifespan(app: FastAPI):
     """Application lifespan events"""
     # Startup
-    print("🚀 Starting PDF OCR Text Extractor...")
+    print("Starting PDF OCR Text Extractor...")
     
     # Create database tables
     Base.metadata.create_all(bind=engine)
-    print("✅ Database tables created")
+    print(" Database tables created")
     
     # Start background cleanup task
     cleanup_task = asyncio.create_task(periodic_cleanup())
@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown
-    print("🛑 Shutting down application...")
+    print("Shutting down application...")
     cleanup_task.cancel()
     try:
         await cleanup_task
