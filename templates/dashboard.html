@@ -894,13 +894,25 @@
                 formData.append('file', selectedFile);
                 formData.append('language', languageSelect.value);
 
-                // Simulate API call
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                // Call the actual OCR API
+                const response = await fetch('/api/ocr/upload', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include' // Send cookies for authentication
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Upload failed');
+                }
+
+                const result = await response.json();
+                const jobId = result.job_id;
 
                 processBtn.innerHTML = '<i class="fas fa-check"></i> Processing Complete!';
                 
                 setTimeout(() => {
-                    window.location.href = '/results/new-job-id';
+                    window.location.href = `/results/${jobId}`;
                 }, 1500);
             } catch (error) {
                 console.error('Error processing file:', error);

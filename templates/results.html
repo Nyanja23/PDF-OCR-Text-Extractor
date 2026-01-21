@@ -40,7 +40,7 @@
         /* Floating orbs */
         .orb {
             position: fixed;
-            border-radius: 50%;
+            border-radius: 50%;``
             filter: blur(100px);
             opacity: 0.15;
             z-index: 1;
@@ -755,9 +755,9 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
     </div>
 
     <script>
-        // Get job ID from URL
-        const params = new URLSearchParams(window.location.search);
-        const jobId = params.get('job_id');
+        // Get job ID from URL path (/results/{jobId})
+        const pathParts = window.location.pathname.split('/');
+        const jobId = pathParts[pathParts.length - 1];
 
         // Fetch and display results from API
         async function loadResults() {
@@ -767,15 +767,35 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
                 return;
             }
 
+            // Set a timeout for loading
+            const loadingTimeout = setTimeout(() => {
+                console.warn('⏱️ Loading timeout - results taking longer than expected');
+                document.getElementById('loadingState').innerHTML = '<p style="color: #fbbf24; text-align: center; padding: 2rem;">Processing is taking longer than expected. Please wait...</p>';
+            }, 10000); // 10 seconds
+
             try {
+                console.log('📝 Loading results for job_id:', jobId);
+                
                 // Fetch results from API
-                const response = await fetch(`/api/ocr/result/${jobId}`);
+                const response = await fetch(`/api/ocr/result/${jobId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include' // Important: send cookies for authentication
+                });
+                
+                clearTimeout(loadingTimeout); // Clear the timeout once response arrives
+                console.log('📝 API Response status:', response.status);
                 
                 if (!response.ok) {
-                    throw new Error(`API error: ${response.status}`);
+                    const errorText = await response.text();
+                    console.error('API error details:', errorText);
+                    throw new Error(`API error: ${response.status} - ${errorText}`);
                 }
                 
                 const data = await response.json();
+                console.log('📝 API Response data:', data);
                 
                 // Display results
                 document.getElementById('loadingState').style.display = 'none';
@@ -784,20 +804,36 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
                 // Combine all page texts
                 let fullText = '';
                 if (data.results && Array.isArray(data.results)) {
+                    console.log('📝 Found', data.results.length, 'results');
                     fullText = data.results.map(result => {
                         return `--- Page ${result.page_number} ---\n${result.text}`;
                     }).join('\n\n');
+                } else {
+                    console.log('📝 No results array found in response');
                 }
                 
                 // Update the text content
                 document.getElementById('textContent').textContent = fullText || 'No text extracted';
                 
+                // Update file info
+                if (data.filename) {
+                    document.getElementById('filename').textContent = data.filename;
+                }
+                if (data.total_pages) {
+                    document.getElementById('pageCount').textContent = data.total_pages;
+                }
+                if (data.total_processing_time) {
+                    document.getElementById('processingTime').textContent = data.total_processing_time.toFixed(2);
+                }
+                
                 // Update stats
                 updateStats();
+                console.log('✅ Results loaded successfully');
             } catch (error) {
-                console.error('Error loading results:', error);
+                clearTimeout(loadingTimeout); // Clear the timeout on error
+                console.error('❌ Error loading results:', error);
                 document.getElementById('loadingState').style.display = 'none';
-                document.getElementById('contentState').innerHTML = `<p style="color: red;">Error loading results: ${error.message}</p>`;
+                document.getElementById('contentState').innerHTML = `<p style="color: red; padding: 2rem;">Error loading results: ${error.message}</p>`;
             }
         }
 

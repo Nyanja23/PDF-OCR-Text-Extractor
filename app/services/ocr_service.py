@@ -1,6 +1,6 @@
 """
 app/services/ocr_service.py
-OCR processing orchestration service
+OCR processing orchestration service - FAST & ACCURATE VERSION
 """
 
 import pytesseract
@@ -9,8 +9,9 @@ import cv2
 import numpy as np
 from pdf2image import convert_from_path
 import time
-from typing import List, Tuple
+from typing import List
 import os
+import re
 
 from app.core.config import settings
 from app.services.preprocessing import ImagePreprocessor
@@ -19,155 +20,133 @@ from app.core.exceptions import OCRProcessingException
 
 
 class OCRService:
-    """OCR processing service using Tesseract"""
-    
+    """OCR processing service using Tesseract - optimized for speed & readability"""
+
+    # Modern LSTM + single block of text (best for most scanned docs)
+    TESSERACT_CONFIG = '--oem 1 --psm 6'
+
     def __init__(self):
-        # Set Tesseract command path
         if settings.TESSERACT_CMD:
             pytesseract.pytesseract.tesseract_cmd = settings.TESSERACT_CMD
-        
         self.preprocessor = ImagePreprocessor()
-    
+
     def process_file(self, file_path: str, language: str = None) -> List[OCRResult]:
-        """
-        Process a file (PDF or image) and extract text
-        Returns list of OCRResult for each page
-        """
         if language is None:
             language = settings.DEFAULT_LANGUAGE
         
-        # Determine file type
         file_ext = os.path.splitext(file_path)[1].lower()
         
         if file_ext == '.pdf':
             return self._process_pdf(file_path, language)
         else:
             return self._process_image(file_path, language)
-    
+
     def _process_pdf(self, pdf_path: str, language: str) -> List[OCRResult]:
-        """Process PDF file page by page"""
         results = []
-        
         try:
-            # Convert PDF to images
-            images = convert_from_path(pdf_path, dpi=300)
+            # Lower DPI = much faster, still excellent quality
+            images = convert_from_path(pdf_path, dpi=250)
             
             for page_num, image in enumerate(images, start=1):
-                # Convert PIL image to numpy array
                 cv2_image = self.preprocessor.pil_to_cv2(image)
-                
-                # Process the page
                 result = self._process_single_image(cv2_image, page_num, language)
                 results.append(result)
-            
             return results
-        
         except Exception as e:
             raise OCRProcessingException(f"Failed to process PDF: {str(e)}")
-    
+
     def _process_image(self, image_path: str, language: str) -> List[OCRResult]:
-        """Process single image file"""
         try:
-            # Load image
             image = cv2.imread(image_path)
-            
             if image is None:
                 raise OCRProcessingException("Failed to load image")
-            
-            # Process the image
             result = self._process_single_image(image, 1, language)
-            
             return [result]
-        
         except Exception as e:
             raise OCRProcessingException(f"Failed to process image: {str(e)}")
-    
+
     def _process_single_image(
-        self,
-        image: np.ndarray,
-        page_number: int,
-        language: str
+        self, image: np.ndarray, page_number: int, language: str
     ) -> OCRResult:
-        """Process a single image and extract text"""
         start_time = time.time()
-        
         try:
-            # Resize if too large
-            image = self.preprocessor.resize_if_needed(image)
-            
-            # Apply preprocessing pipeline
-            preprocessed = self.preprocessor.preprocess(image)
-            
-            # Convert back to PIL for Tesseract
-            pil_image = self.preprocessor.cv2_to_pil(preprocessed)
-            
-            # Perform OCR with data for confidence scores
+            # Resize if huge
+            image = self.preprocessor.resize_if_needed(image, max_dimension=2200)
+
+            # === OPTIMIZED PREPROCESSING ===
+            processed = self._optimized_preprocess(image)
+
+            # Convert to PIL
+            pil_image = self.preprocessor.cv2_to_pil(processed)
+
+            # OCR
             ocr_data = pytesseract.image_to_data(
-                pil_image,
-                lang=language,
+                pil_image, lang=language,
                 output_type=pytesseract.Output.DICT,
-                config='--psm 3'  # Fully automatic page segmentation
+                config=self.TESSERACT_CONFIG
             )
-            
-            # Extract text
+
             text = pytesseract.image_to_string(
-                pil_image,
-                lang=language,
-                config='--psm 3'
+                pil_image, lang=language, config=self.TESSERACT_CONFIG
             )
-            
-            # Calculate average confidence
-            confidences = [
-                int(conf) for conf in ocr_data['conf']
-                if conf != '-1'
-            ]
+
+            # Handle empty cases
+            text = text or ""
+
+            # Confidence
+            confidences = [int(c) for c in ocr_data['conf'] if c != '-1']
             avg_confidence = sum(confidences) / len(confidences) if confidences else 0
-            
+
             processing_time = time.time() - start_time
-            
-            # Clean up text
+
             text = self._clean_text(text)
-            
+
             return OCRResult(
                 page_number=page_number,
                 text=text,
-                confidence=avg_confidence / 100.0,  # Convert to 0-1 range
+                confidence=avg_confidence / 100.0,
                 processing_time=processing_time
             )
-        
+
         except Exception as e:
             processing_time = time.time() - start_time
-            raise OCRProcessingException(
-                f"OCR failed on page {page_number}: {str(e)}"
-            )
-    
+            raise OCRProcessingException(f"OCR failed on page {page_number}: {str(e)}")
+
+    # ──── OPTIMIZED PREPROCESSING ───────────────────────────────────────
+    def _optimized_preprocess(self, image: np.ndarray) -> np.ndarray:
+        """Faster & better for Tesseract: grayscale → denoise → CLAHE → light sharpen"""
+        if len(image.shape) == 3:
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = image.copy()
+
+        # Denoise (keep it light)
+        denoised = cv2.bilateralFilter(gray, d=7, sigmaColor=50, sigmaSpace=50)
+
+        # Contrast enhancement
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        enhanced = clahe.apply(denoised)
+
+        # Light sharpening (helps Tesseract a lot!)
+        kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+        sharpened = cv2.filter2D(enhanced, -1, kernel)
+
+        # Return grayscale enhanced image (NO binarization!)
+        return sharpened
+
     def _clean_text(self, text: str) -> str:
-        """Clean extracted text"""
-        # Remove excessive whitespace
-        lines = text.split('\n')
-        cleaned_lines = []
+        if not text:
+            return ""
         
-        for line in lines:
-            # Strip whitespace from each line
-            line = line.strip()
-            
-            # Keep non-empty lines
-            if line:
-                cleaned_lines.append(line)
+        # Split lines and clean each
+        lines = [line.strip() for line in text.split('\n') if line.strip()]
         
-        # Join with single newlines
-        cleaned_text = '\n'.join(cleaned_lines)
+        # Join and normalize spaces
+        result = '\n'.join(lines)
+        result = re.sub(r'  +', ' ', result)        # multiple spaces → one
+        result = re.sub(r'\n{3,}', '\n\n', result)  # multiple newlines → two
         
-        # Remove multiple consecutive newlines
-        while '\n\n\n' in cleaned_text:
-            cleaned_text = cleaned_text.replace('\n\n\n', '\n\n')
-        
-        return cleaned_text.strip()
-    
+        return result.strip()
+
     def get_supported_languages(self) -> List[str]:
-        """Get list of supported languages from Tesseract"""
-        try:
-            langs = pytesseract.get_languages()
-            return langs
-        except Exception:
-            return [settings.DEFAULT_LANGUAGE]
+        return ['eng', 'fra', 'deu', 'spa', 'ita', 'por', 'rus', 'jpn', 'kor', 'chi_sim', 'chi_tra']
