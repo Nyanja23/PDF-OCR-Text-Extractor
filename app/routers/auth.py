@@ -72,6 +72,48 @@ async def verify_email(
     }
 
 
+@router.post("/resend-verification-code", response_model=dict)
+async def resend_verification_code(
+    email_request: dict,
+    db: Session = Depends(get_db)
+):
+    """Resend verification code to email"""
+    email = email_request.get("email")
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    
+    auth_service = AuthService(db)
+    
+    try:
+        # Get user
+        from app.models.user import User
+        user = db.query(User).filter(User.email == email).first()
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        if user.is_verified:
+            raise HTTPException(status_code=400, detail="Email already verified")
+        
+        # Generate and send new OTP
+        otp_code = auth_service._create_otp(user.id, "email_verification")
+        from app.services.email_service import send_otp_email
+        send_otp_email(user.email, otp_code, "email_verification")
+        
+        return {
+            "message": "Verification code resent successfully. Check your email.",
+            "email": email
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to resend verification code")
+
+
 @router.post("/login", response_model=TokenResponse)
 async def login(
     login_data: UserLogin,

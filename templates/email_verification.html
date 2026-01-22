@@ -774,9 +774,25 @@
             resendButton.innerHTML = 'Resending...';
             resendButton.disabled = true;
             
-            // Make API request to resend OTP - note: this requires a new endpoint
-            // For now, we'll just reset the timer
-            setTimeout(() => {
+            // Make API request to resend OTP
+            fetch('/api/auth/resend-verification-code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: email
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.detail || 'Failed to resend code');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
                 showSuccessMessage('New verification code sent! Check your email.');
                 otpInputs.forEach(input => {
                     input.value = '';
@@ -789,7 +805,13 @@
                 countdown = 30;
                 timerDisplay.textContent = `(${formatTime(countdown)})`;
                 startCountdown();
-            }, 1000);
+                resendButton.innerHTML = 'Resend';
+            })
+            .catch(error => {
+                showError(error.message);
+                resendButton.innerHTML = 'Resend';
+                resendButton.disabled = false;
+            });
         });
         
         function startCountdown() {
