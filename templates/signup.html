@@ -708,7 +708,10 @@
                 .then(response => {
                     if (!response.ok) {
                         return response.json().then(err => {
-                            throw new Error(err.detail || 'Registration failed');
+                            const errorDetail = err.detail || 'Registration failed';
+                            // Handle both string and object errors
+                            const errorMsg = typeof errorDetail === 'string' ? errorDetail : JSON.stringify(errorDetail);
+                            throw new Error(errorMsg);
                         });
                     }
                     return response.json();
@@ -721,16 +724,17 @@
                     submitBtn.innerHTML = 'Create Account';
                     submitBtn.disabled = false;
                     
-                    // Redirect to email verification page
+                    // Redirect to email verification page after 1.5 seconds
                     setTimeout(() => {
                         window.location.href = '/verify-email?email=' + encodeURIComponent(email);
-                    }, 2000);
+                    }, 1500);
                 })
                 .catch(error => {
                     console.error('Registration error:', error);
                     submitBtn.innerHTML = 'Create Account';
                     submitBtn.disabled = false;
-                    alert('Registration failed: ' + error.message);
+                    const errorMsg = error.message || 'Registration failed. Please try again.';
+                    alert(errorMsg);
                 });
             }
         });

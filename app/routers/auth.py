@@ -46,14 +46,17 @@ async def register(
             "email": user.email,
             "user_id": user.id
         }
-    except HTTPException:
+    except HTTPException as he:
         # Let FastAPI handle known HTTPExceptions
+        print(f"HTTPException in register: {he.detail}")
         raise
     except Exception as e:
-        # Log full traceback to console for debugging, then return 500
+        # Log full traceback to console for debugging, then return detailed error
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        error_msg = str(e)
+        print(f"Registration error: {error_msg}")
+        raise HTTPException(status_code=400, detail=error_msg)
 
 
 @router.post("/verify-email", response_model=dict)
