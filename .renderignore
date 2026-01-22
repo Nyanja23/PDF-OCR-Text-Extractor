@@ -1,0 +1,16 @@
+venv
+__pycache__
+*.pyc
+.git
+.gitignore
+.env.local
+.env.*.local
+.pytest_cache
+.coverage
+htmlcov
+dist
+build
+*.egg-info
+node_modules
+docker-compose.yml
+docker/
