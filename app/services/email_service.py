@@ -13,6 +13,18 @@ from app.core.config import settings
 
 def send_email(to_email: str, subject: str, html_content: str, text_content: Optional[str] = None):
     """Send email via SMTP"""
+    # For development/testing: if no SMTP credentials, log to console instead
+    if not settings.SMTP_USER or not settings.SMTP_PASSWORD or not settings.EMAIL_FROM:
+        print(f"\n{'='*80}")
+        print(f"📧 EMAIL (Development Mode - Not Actually Sent)")
+        print(f"{'='*80}")
+        print(f"To: {to_email}")
+        print(f"Subject: {subject}")
+        print(f"{'─'*80}")
+        print(text_content if text_content else "[HTML content only - see terminal for HTML]")
+        print(f"{'='*80}\n")
+        return True
+    
     try:
         # Create message
         msg = MIMEMultipart("alternative")

@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   app:
+    container_name: pdf-ocr-extractor-app
     build:
       context: .               
       dockerfile: docker/Dockerfile   

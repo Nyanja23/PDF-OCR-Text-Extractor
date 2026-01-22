@@ -639,11 +639,14 @@
         
         let countdown = 30;
         let countdownInterval;
-        let generatedOtp = '';
         
-        // Generate random OTP
-        generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-        console.log('Generated OTP (for demo):', generatedOtp);
+        // Get email from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const email = urlParams.get('email');
+        
+        if (email) {
+            emailDisplay.textContent = email;
+        }
         
         startCountdown();
         
@@ -651,7 +654,7 @@
         backButton.addEventListener('click', function(event) {
             event.preventDefault();
             if (confirm('Are you sure you want to go back? Your verification progress will be lost.')) {
-                alert('Redirecting back to signup...');
+                window.location.href = '/register';
             }
         });
         
@@ -710,41 +713,69 @@
             let enteredOtp = '';
             otpInputs.forEach(input => enteredOtp += input.value);
             
+            if (!email) {
+                showError('Email not found. Please start over from registration.');
+                return;
+            }
+            
             verifyButton.innerHTML = '<span class="spinner"></span> Verifying...';
             verifyButton.disabled = true;
             
-            setTimeout(() => {
-                if (enteredOtp === generatedOtp) {
-                    showSuccess();
-                    setTimeout(() => {
-                        successMessage.innerHTML = '<i class="fas fa-check-circle"></i> Account activated! Redirecting to dashboard...';
-                        setTimeout(() => {
-                            alert('Account successfully activated! You would now be redirected to the dashboard.');
-                        }, 1500);
-                    }, 1000);
-                } else {
-                    showError('Invalid verification code. Please try again.');
-                    verifyButton.innerHTML = '<i class="fas fa-check-circle"></i> Verify Email';
-                    verifyButton.disabled = false;
-                    otpInputs.forEach(input => {
-                        input.value = '';
-                        input.classList.remove('filled');
+            // Make API request to verify email
+            fetch('/api/auth/verify-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: email,
+                    code: enteredOtp
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.detail || 'Verification failed');
                     });
-                    otpInputs[0].focus();
                 }
-            }, 1500);
+                return response.json();
+            })
+            .then(data => {
+                showSuccess();
+                setTimeout(() => {
+                    successMessage.innerHTML = '<i class="fas fa-check-circle"></i> Email verified! Redirecting to login...';
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                }, 1000);
+            })
+            .catch(error => {
+                console.error('Verification error:', error);
+                showError('Invalid verification code. ' + error.message);
+                verifyButton.innerHTML = '<i class="fas fa-check-circle"></i> Verify Email';
+                verifyButton.disabled = false;
+                otpInputs.forEach(input => {
+                    input.value = '';
+                    input.classList.remove('filled');
+                });
+                otpInputs[0].focus();
+            });
         });
         
         // Resend button
         resendButton.addEventListener('click', function() {
             if (resendButton.disabled) return;
             
+            if (!email) {
+                showError('Email not found. Please start over from registration.');
+                return;
+            }
+            
             resendButton.innerHTML = 'Resending...';
             resendButton.disabled = true;
             
-            generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-            console.log('New OTP (for demo):', generatedOtp);
-            
+            // Make API request to resend OTP - note: this requires a new endpoint
+            // For now, we'll just reset the timer
             setTimeout(() => {
                 showSuccessMessage('New verification code sent! Check your email.');
                 otpInputs.forEach(input => {

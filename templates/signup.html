@@ -693,17 +693,45 @@
                 submitBtn.innerHTML = 'Creating Account<span class="spinner"></span>';
                 submitBtn.disabled = true;
                 
-                setTimeout(() => {
+                // Make API request to register
+                fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        full_name: fullName,
+                        email: email,
+                        password: password
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            throw new Error(err.detail || 'Registration failed');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
                     successMessage.style.display = 'block';
+                    successMessage.innerHTML = '<i class="fas fa-check-circle"></i> Account created successfully! Redirecting to email verification...';
                     form.reset();
                     strengthBar.style.width = '0';
                     submitBtn.innerHTML = 'Create Account';
                     submitBtn.disabled = false;
                     
+                    // Redirect to email verification page
                     setTimeout(() => {
-                        window.location.href = '#dashboard';
+                        window.location.href = '/verify-email?email=' + encodeURIComponent(email);
                     }, 2000);
-                }, 1500);
+                })
+                .catch(error => {
+                    console.error('Registration error:', error);
+                    submitBtn.innerHTML = 'Create Account';
+                    submitBtn.disabled = false;
+                    alert('Registration failed: ' + error.message);
+                });
             }
         });
         
