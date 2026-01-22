@@ -15,8 +15,8 @@ class Settings(BaseSettings):
     APP_NAME: str = "PDF OCR Text Extractor"
     DEBUG: bool = False
     SECRET_KEY: str
-    ALLOWED_HOSTS: List[str] = ["localhost", "127.0.0.1"]
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000"]
+    ALLOWED_HOSTS: List[str] = ["localhost", "127.0.0.1", "*.onrender.com"]
+    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "https://*.onrender.com"]
     
     # Database
     DATABASE_URL: str = "sqlite:///./ocr_app.db"

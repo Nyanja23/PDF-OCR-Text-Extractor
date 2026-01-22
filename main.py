@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from contextlib import asynccontextmanager
 import uvicorn
+import os
 
 from app.core.config import settings
 from app.core.database import engine, Base
@@ -75,9 +76,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Configure TrustedHostMiddleware with environment-aware hosts
+trusted_hosts = list(settings.ALLOWED_HOSTS)
+# Add current Render URL from environment if available
+if render_url := os.getenv("RENDER_EXTERNAL_URL"):
+    trusted_hosts.append(render_url.replace("https://", "").replace("http://", ""))
+
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=settings.ALLOWED_HOSTS
+    allowed_hosts=trusted_hosts
 )
 
 app.add_middleware(RateLimitMiddleware)
@@ -95,6 +102,14 @@ app.include_router(ocr.router, prefix="/api/ocr", tags=["OCR"])
 
 # Frontend pages routes
 app.include_router(pages.router, tags=["Pages"])
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    """Favicon endpoint - prevents 404 errors"""
+    # Return a simple 204 No Content response
+    from fastapi.responses import Response
+    return Response(status_code=204)
 
 
 @app.get("/health")
