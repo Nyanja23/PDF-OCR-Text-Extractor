@@ -1,35 +1,21 @@
-# Dockerfile
-# PDF OCR Text Extractor - Docker Configuration
+FROM python:3.12-slim
 
-FROM python:3.11-slim
-
-# Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system deps
 RUN apt-get update && apt-get install -y \
-    tesseract-ocr \
-    tesseract-ocr-eng \
-    libtesseract-dev \
-    poppler-utils \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
+    libpq-dev gcc tesseract-ocr poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
-COPY requirements.txt .
+# Increase pip timeout & retries for slow networks
+RUN pip config set global.timeout 120 && \
+    pip config set global.retries 10 && \
+    pip config set global.default-timeout 120
 
-# Install Python dependencies
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
 COPY . .
 
-# Create upload directory
-RUN mkdir -p uploads logs
-
-# Expose port
 EXPOSE 8000
-
-# Run application
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
