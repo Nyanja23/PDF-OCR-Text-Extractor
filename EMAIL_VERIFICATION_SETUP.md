@@ -1,4 +1,4 @@
-# Email Verification Setup Guide
+`# Email Verification Setup Guide
 
 ## Overview
 Your app is configured to send real emails for:
