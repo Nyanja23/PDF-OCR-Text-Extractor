@@ -51,7 +51,17 @@ dependencies = [
     "PyYAML==6.0.3",
     "redis==5.0.1",
     "requests==2.31.0",
-    "rsa==4.9.1",
+    "rsa==    services:
+      - type: web
+        name: pdf-ocr-extractor
+        dockerfilePath: ./docker/Dockerfile
+        plan: free
+        healthCheckPath: /
+        healthCheckInterval: 30
+        autoDeploy: true
+        envVars:
+          - key: PORT
+            value: 100004.9.1",
     "six==1.17.0",
     "sniffio==1.3.1",
     "SQLAlchemy==2.0.25",

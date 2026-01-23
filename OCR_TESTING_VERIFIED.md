@@ -1,4 +1,14 @@
-# OCR Upload Troubleshooting Guide
+services:
+  - type: web
+    name: pdf-ocr-extractor
+    dockerfilePath: ./docker/Dockerfile
+    plan: free
+    healthCheckPath: /
+    healthCheckInterval: 30
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 10000# OCR Upload Troubleshooting Guide
 
 ## Status: Email Verified ✅
 
