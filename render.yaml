@@ -2,7 +2,7 @@ services:
   - type: web
     name: pdf-ocr-extractor
     env: docker
-    dockerfilePath: docker/Dockerfile
+    dockerfilePath: ./Dockerfile
     plan: free
     autoDeploy: true
     healthCheckPath: /
