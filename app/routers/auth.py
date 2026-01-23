@@ -3,7 +3,7 @@ app/routers/auth.py
 Authentication API endpoints
 """
 
-from fastapi import APIRouter, Depends, Response, Request, HTTPException
+from fastapi import APIRouter, Depends, Response, Request, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from authlib.integrations.starlette_client import OAuth
 from starlette.responses import RedirectResponse
@@ -15,6 +15,7 @@ from app.schemas.auth import (
     OTPVerify, PasswordResetRequest, PasswordReset, TokenResponse
 )
 from app.services.auth_service import AuthService
+from app.services.email_service import send_otp_email
 from app.core.config import settings
 
 
@@ -34,12 +35,24 @@ oauth.register(
 @router.post("/register", response_model=dict)
 async def register(
     user_data: UserCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """Register a new user"""
     try:
         auth_service = AuthService(db)
         user, otp_code = auth_service.register_user(user_data)
+        
+        # Send email in background (non-blocking)
+        background_tasks.add_task(send_otp_email, user.email, otp_code, "email_verification")
+        
+        # Log OTP to console for development/debugging
+        print(f"\n{'='*80}")
+        print(f"🔐 OTP FOR {user.email}")
+        print(f"{'='*80}")
+        print(f"Code: {otp_code}")
+        print(f"Expires in: 15 minutes")
+        print(f"{'='*80}\n")
 
         return {
             "message": "Registration successful. Please check your email for verification code.",
@@ -78,6 +91,7 @@ async def verify_email(
 @router.post("/resend-verification-code", response_model=dict)
 async def resend_verification_code(
     email_request: dict,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """Resend verification code to email"""
@@ -99,10 +113,17 @@ async def resend_verification_code(
         if user.is_verified:
             raise HTTPException(status_code=400, detail="Email already verified")
         
-        # Generate and send new OTP
+        # Generate and send new OTP in background
         otp_code = auth_service._create_otp(user.id, "email_verification")
-        from app.services.email_service import send_otp_email
-        send_otp_email(user.email, otp_code, "email_verification")
+        background_tasks.add_task(send_otp_email, user.email, otp_code, "email_verification")
+        
+        # Log OTP to console for development/debugging
+        print(f"\n{'='*80}")
+        print(f"🔐 RESEND OTP FOR {user.email}")
+        print(f"{'='*80}")
+        print(f"Code: {otp_code}")
+        print(f"Expires in: 15 minutes")
+        print(f"{'='*80}\n")
         
         return {
             "message": "Verification code resent successfully. Check your email.",

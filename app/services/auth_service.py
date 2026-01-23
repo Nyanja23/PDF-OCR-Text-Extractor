@@ -18,7 +18,6 @@ from app.core.exceptions import (
     BadRequestException, UnauthorizedException,
     ConflictException, NotFoundException
 )
-from app.services.email_service import send_otp_email
 
 
 class AuthService:
@@ -29,7 +28,8 @@ class AuthService:
     
     def register_user(self, user_data: UserCreate) -> Tuple[User, str]:
         """
-        Register a new user and send verification email
+        Register a new user and generate verification email OTP
+        Note: Email sending is handled separately in the router (background task)
         Returns (user, otp_code)
         """
         # Check if user already exists
@@ -52,9 +52,8 @@ class AuthService:
         self.db.commit()
         self.db.refresh(user)
         
-        # Generate and send OTP for email verification
+        # Generate OTP for email verification (email sent in background by router)
         otp_code = self._create_otp(user.id, "email_verification")
-        send_otp_email(user.email, otp_code, "email_verification")
         
         return user, otp_code
     
