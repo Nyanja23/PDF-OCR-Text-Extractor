@@ -12,11 +12,21 @@ import time
 from typing import List
 import os
 import re
+import subprocess
 
 from app.core.config import settings
 from app.services.preprocessing import ImagePreprocessor
 from app.schemas.ocr import OCRResult
 from app.core.exceptions import OCRProcessingException
+
+
+def check_tesseract_available() -> bool:
+    """Check if Tesseract is installed and available"""
+    try:
+        subprocess.run(['tesseract', '--version'], capture_output=True, check=True, timeout=5)
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        return False
 
 
 class OCRService:
@@ -29,8 +39,18 @@ class OCRService:
         if settings.TESSERACT_CMD:
             pytesseract.pytesseract.tesseract_cmd = settings.TESSERACT_CMD
         self.preprocessor = ImagePreprocessor()
+        self.tesseract_available = check_tesseract_available()
 
     def process_file(self, file_path: str, language: str = None) -> List[OCRResult]:
+        if not self.tesseract_available:
+            error_msg = (
+                "Tesseract OCR is not installed on the server. "
+                "The app is running in native Python mode instead of Docker. "
+                "To fix this: go to Render dashboard → Settings → Change Environment to 'Docker' → Redeploy. "
+                "Your Dockerfile has Tesseract configured. "
+            )
+            raise OCRProcessingException(error_msg)
+            
         if language is None:
             language = settings.DEFAULT_LANGUAGE
         
