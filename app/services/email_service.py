@@ -1,69 +1,63 @@
 """
 app/services/email_service.py
-Email sending service for OTP and notifications
+Email sending service using MailerSend HTTP API
 """
 
-import smtplib
-import ssl
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import httpx
 from typing import Optional
 
 from app.core.config import settings
 
+MAILERSEND_API_URL = "https://api.mailersend.com/v1/email"
+
 
 def send_email(to_email: str, subject: str, html_content: str, text_content: Optional[str] = None):
-    """Send email via SMTP with SSL or STARTTLS support"""
-    # For development/testing: if no SMTP credentials, log to console instead
-    if not settings.SMTP_USER or not settings.SMTP_PASSWORD or not settings.EMAIL_FROM:
+    """Send email via MailerSend HTTP API"""
+    # For development/testing: if no API key, log to console instead
+    if not settings.MAILERSEND_API_KEY or not settings.EMAIL_FROM:
         print(f"\n{'='*80}")
         print(f"📧 EMAIL (Development Mode - Not Actually Sent)")
         print(f"{'='*80}")
         print(f"To: {to_email}")
         print(f"Subject: {subject}")
         print(f"{'─'*80}")
-        print(text_content if text_content else "[HTML content only - see terminal for HTML]")
+        print(text_content if text_content else "[HTML content only]")
         print(f"{'='*80}\n")
         return True
     
     try:
-        # Create message
-        msg = MIMEMultipart("alternative")
-        msg["From"] = f"{settings.EMAIL_FROM_NAME} <{settings.EMAIL_FROM}>"
-        msg["To"] = to_email
-        msg["Subject"] = subject
+        headers = {
+            "Authorization": f"Bearer {settings.MAILERSEND_API_KEY}",
+            "Content-Type": "application/json",
+        }
         
-        # Add plain text version
+        payload = {
+            "from": {
+                "email": settings.EMAIL_FROM,
+                "name": settings.EMAIL_FROM_NAME,
+            },
+            "to": [{
+                "email": to_email,
+            }],
+            "subject": subject,
+            "html": html_content,
+        }
+        
         if text_content:
-            msg.attach(MIMEText(text_content, "plain"))
+            payload["text"] = text_content
         
-        # Add HTML version
-        msg.attach(MIMEText(html_content, "html"))
+        with httpx.Client(timeout=30.0) as client:
+            response = client.post(MAILERSEND_API_URL, json=payload, headers=headers)
         
-        # Create SSL context
-        context = ssl.create_default_context()
-        
-        # Use SSL (port 465) or STARTTLS (port 587)
-        if getattr(settings, 'SMTP_USE_SSL', False) or settings.SMTP_PORT == 465:
-            # Direct SSL connection
-            with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, context=context, timeout=30) as server:
-                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-                server.send_message(msg)
+        if response.status_code in (200, 202):
+            print(f"✉️ Email sent to {to_email}")
+            return True
         else:
-            # STARTTLS connection
-            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=30) as server:
-                server.starttls(context=context)
-                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-                server.send_message(msg)
-        
-        print(f"✉️ Email sent to {to_email}")
-        return True
+            print(f"❌ MailerSend API error: {response.status_code} - {response.text}")
+            return False
     
     except Exception as e:
         print(f"❌ Failed to send email to {to_email}: {e}")
-        # Log more details for debugging
-        print(f"   SMTP Host: {settings.SMTP_HOST}:{settings.SMTP_PORT}")
-        print(f"   SSL Mode: {getattr(settings, 'SMTP_USE_SSL', False)}")
         return False
 
 

@@ -34,13 +34,9 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "uploads"
     FILE_CLEANUP_HOURS: int = 1
     
-    # Email Configuration
-    SMTP_HOST: str = "smtp.gmail.com"
-    SMTP_PORT: int = 465  # Use SSL port (more reliable on cloud platforms)
-    SMTP_USE_SSL: bool = True  # Use SSL instead of STARTTLS
-    SMTP_USER: str = ""
-    SMTP_PASSWORD: str = ""
-    EMAIL_FROM: str = ""
+    # Email Configuration (MailerSend HTTP API)
+    MAILERSEND_API_KEY: str = ""  # MailerSend API token
+    EMAIL_FROM: str = ""  # Must be verified domain email in MailerSend
     EMAIL_FROM_NAME: str = "PDF OCR Extractor"
     
     # OAuth (Google)
