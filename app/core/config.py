@@ -36,7 +36,8 @@ class Settings(BaseSettings):
     
     # Email Configuration
     SMTP_HOST: str = "smtp.gmail.com"
-    SMTP_PORT: int = 587
+    SMTP_PORT: int = 465  # Use SSL port (more reliable on cloud platforms)
+    SMTP_USE_SSL: bool = True  # Use SSL instead of STARTTLS
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     EMAIL_FROM: str = ""

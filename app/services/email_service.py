@@ -4,6 +4,7 @@ Email sending service for OTP and notifications
 """
 
 import smtplib
+import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import Optional
@@ -12,7 +13,7 @@ from app.core.config import settings
 
 
 def send_email(to_email: str, subject: str, html_content: str, text_content: Optional[str] = None):
-    """Send email via SMTP"""
+    """Send email via SMTP with SSL or STARTTLS support"""
     # For development/testing: if no SMTP credentials, log to console instead
     if not settings.SMTP_USER or not settings.SMTP_PASSWORD or not settings.EMAIL_FROM:
         print(f"\n{'='*80}")
@@ -39,18 +40,30 @@ def send_email(to_email: str, subject: str, html_content: str, text_content: Opt
         # Add HTML version
         msg.attach(MIMEText(html_content, "html"))
         
-        # Connect to SMTP server
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-            server.starttls()
-            if settings.SMTP_USER and settings.SMTP_PASSWORD:
+        # Create SSL context
+        context = ssl.create_default_context()
+        
+        # Use SSL (port 465) or STARTTLS (port 587)
+        if getattr(settings, 'SMTP_USE_SSL', False) or settings.SMTP_PORT == 465:
+            # Direct SSL connection
+            with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, context=context, timeout=30) as server:
                 server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.send_message(msg)
+                server.send_message(msg)
+        else:
+            # STARTTLS connection
+            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=30) as server:
+                server.starttls(context=context)
+                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                server.send_message(msg)
         
         print(f"✉️ Email sent to {to_email}")
         return True
     
     except Exception as e:
         print(f"❌ Failed to send email to {to_email}: {e}")
+        # Log more details for debugging
+        print(f"   SMTP Host: {settings.SMTP_HOST}:{settings.SMTP_PORT}")
+        print(f"   SSL Mode: {getattr(settings, 'SMTP_USE_SSL', False)}")
         return False
 
 
