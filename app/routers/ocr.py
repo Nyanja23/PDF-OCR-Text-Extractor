@@ -80,6 +80,9 @@ async def upload_and_process(
     except Exception as e:
         # Cleanup on error
         file_service.delete_file(file_path)
+        import traceback
+        traceback.print_exc()
+        print(f"OCR processing error: {str(e)}")
         raise OCRProcessingException(f"Failed to process document: {str(e)}")
 
 
