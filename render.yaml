@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: pdf-ocr-extractor
+    env: python
+    buildCommand: bash build.sh && pip install -r requirements.txt
+    startCommand: gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:$PORT main:app
+    plan: free
+    healthCheckPath: /health
+    healthCheckInterval: 30
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.1
