@@ -31,5 +31,5 @@ RUN mkdir -p uploads logs
 # Expose port
 EXPOSE 10000
 
-# Run the application with increased timeout for OCR processing
-CMD ["gunicorn", "main:app", "-w", "2", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:10000", "--timeout", "120", "--graceful-timeout", "60"]
+# Run with single worker (saves memory) and longer timeout for OCR
+CMD ["gunicorn", "main:app", "-w", "1", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:10000", "--timeout", "180", "--graceful-timeout", "90"]

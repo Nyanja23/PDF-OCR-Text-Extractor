@@ -64,8 +64,8 @@ class OCRService:
     def _process_pdf(self, pdf_path: str, language: str) -> List[OCRResult]:
         results = []
         try:
-            # Lower DPI = much faster, still excellent quality
-            images = convert_from_path(pdf_path, dpi=250)
+            # Lower DPI for faster processing and less memory usage
+            images = convert_from_path(pdf_path, dpi=150)
             
             for page_num, image in enumerate(images, start=1):
                 cv2_image = self.preprocessor.pil_to_cv2(image)
@@ -90,8 +90,8 @@ class OCRService:
     ) -> OCRResult:
         start_time = time.time()
         try:
-            # Resize if huge
-            image = self.preprocessor.resize_if_needed(image, max_dimension=2200)
+            # Resize large images to prevent memory issues (1500px max)
+            image = self.preprocessor.resize_if_needed(image, max_dimension=1500)
 
             # === OPTIMIZED PREPROCESSING ===
             processed = self._optimized_preprocess(image)

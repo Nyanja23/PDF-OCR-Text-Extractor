@@ -102,8 +102,8 @@ class ImagePreprocessor:
         return rotated
     
     @staticmethod
-    def resize_if_needed(image: np.ndarray, max_dimension: int = 3000) -> np.ndarray:
-        """Resize image if it's too large"""
+    def resize_if_needed(image: np.ndarray, max_dimension: int = 1500) -> np.ndarray:
+        """Resize image if it's too large - optimized for memory-constrained environments"""
         height, width = image.shape[:2]
         
         if max(height, width) > max_dimension:
