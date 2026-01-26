@@ -36,8 +36,8 @@ async def update_profile(
     if update_data.full_name is not None:
         current_user.full_name = update_data.full_name
     
-    # Update email (requires verification in production)
-    if update_data.email is not None:
+    # Update email only if it's different from current email
+    if update_data.email is not None and update_data.email != current_user.email:
         # Check if email already exists
         existing = db.query(User).filter(
             User.email == update_data.email,
@@ -49,7 +49,7 @@ async def update_profile(
         
         # In production, this should trigger email verification
         current_user.email = update_data.email
-        current_user.is_verified = False  # Require re-verification
+        current_user.is_verified = False  # Require re-verification only for actual email change
     
     db.commit()
     db.refresh(current_user)
