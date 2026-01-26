@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -88,6 +89,16 @@ app.add_middleware(
 )
 
 app.add_middleware(RateLimitMiddleware)
+
+# Session middleware for OAuth state management
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.SECRET_KEY,
+    session_cookie="oauth_session",
+    max_age=3600,  # 1 hour
+    same_site="lax",
+    https_only=not settings.DEBUG
+)
 
 # Mount static files
 static_dir = Path(__file__).parent / "static"
