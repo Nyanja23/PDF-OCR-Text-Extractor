@@ -18,6 +18,7 @@ from app.core.exceptions import (
     BadRequestException, UnauthorizedException,
     ConflictException, NotFoundException
 )
+from app.services.email_service import send_otp_email
 
 
 class AuthService:
@@ -242,6 +243,38 @@ class AuthService:
         self.db.refresh(user)
         
         return user
+    
+    def oauth_login(self, email: str, ip_address: str, user_agent: str) -> Tuple[User, str]:
+        """
+        Create session for OAuth user (no password verification)
+        Returns (user, session_id)
+        """
+        user = self.db.query(User).filter(User.email == email).first()
+        
+        if not user:
+            raise UnauthorizedException("User not found")
+        
+        # Check if user is active
+        if not user.is_active:
+            raise UnauthorizedException("Account is inactive")
+        
+        # Reset failed login attempts (if any)
+        user.reset_failed_login()
+        
+        # Create session
+        session_id = generate_session_id()
+        session = UserSession(
+            session_id=session_id,
+            user_id=user.id,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            expires_at=get_session_expiry()
+        )
+        
+        self.db.add(session)
+        self.db.commit()
+        
+        return user, session_id
     
     def _create_otp(self, user_id: int, purpose: str) -> str:
         """Create OTP for user"""

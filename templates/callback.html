@@ -486,55 +486,55 @@
         const code = params.get('code');
         const state = params.get('state');
 
-        // Simulate fetching user data after successful auth
+        // Fetch user data after successful OAuth authentication
         async function completeAuthentication() {
             try {
                 // Check for errors from OAuth provider
                 if (error) {
-                    showErrorState(error_description || 'Authentication was cancelled or failed');
+                    showErrorState(decodeURIComponent(error_description || 'Authentication was cancelled or failed'));
                     return;
                 }
 
-                // If we have an auth code, exchange it for a session
-                if (code) {
-                    // In production, the backend should have already handled this
-                    // and redirected directly with session cookie set
-                    
-                    // Simulate user data (in production, fetch from /api/users/profile)
-                    const userData = {
-                        id: 1,
-                        full_name: 'John Doe',
-                        email: 'john@example.com',
-                        is_verified: true,
-                        is_oauth: true,
-                        oauth_provider: 'google'
-                    };
+                // If we have an auth code (oauth_success), fetch user data
+                if (code === 'oauth_success') {
+                    // Fetch actual user data from the API (session cookie should be set)
+                    const response = await fetch('/api/auth/me', {
+                        method: 'GET',
+                        credentials: 'include',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
 
-                    // Show success state
-                    setTimeout(() => {
-                        showSuccessState(userData);
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch user information');
+                    }
+
+                    const userData = await response.json();
+
+                    // Show success state with real user data
+                    showSuccessState(userData);
+                    
+                    // Countdown and redirect
+                    let seconds = 3;
+                    const countdownEl = document.getElementById('countdown');
+                    
+                    const timer = setInterval(() => {
+                        seconds--;
+                        countdownEl.textContent = seconds;
                         
-                        // Countdown and redirect
-                        let seconds = 3;
-                        const countdownEl = document.getElementById('countdown');
-                        
-                        const timer = setInterval(() => {
-                            seconds--;
-                            countdownEl.textContent = seconds;
-                            
-                            if (seconds <= 0) {
-                                clearInterval(timer);
-                                window.location.href = '/dashboard';
-                            }
-                        }, 1000);
-                    }, 2000);
+                        if (seconds <= 0) {
+                            clearInterval(timer);
+                            window.location.href = '/dashboard';
+                        }
+                    }, 1000);
                 } else {
                     // No code or error - something went wrong
                     showErrorState('No authentication code received. Please try again.');
                 }
             } catch (err) {
                 console.error('Authentication error:', err);
-                showErrorState('An unexpected error occurred. Please try again.');
+                showErrorState(err.message || 'An unexpected error occurred. Please try again.');
             }
         }
 

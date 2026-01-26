@@ -734,13 +734,12 @@
             }
         });
         
-        // Google login
+        // Google login - redirect to OAuth endpoint
         document.getElementById('googleBtn').addEventListener('click', function() {
             this.innerHTML = '<i class="fab fa-google"></i> Connecting<span class="spinner"></span>';
-            setTimeout(() => {
-                this.innerHTML = '<i class="fab fa-google"></i> Continue with Google';
-                alert('Google OAuth would be implemented here. This is a demo.');
-            }, 1500);
+            this.disabled = true;
+            // Redirect to Google OAuth endpoint
+            window.location.href = '/api/auth/google';
         });
         
         // Real-time input validation feedback

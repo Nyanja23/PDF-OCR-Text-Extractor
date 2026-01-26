@@ -1,0 +1,138 @@
+================================================================================
+    PDF OCR EXTRACTOR - LOCAL DEMO INSTRUCTIONS
+================================================================================
+
+Your app is READY to run locally. Here's how:
+
+================================================================================
+STEP 1: UPDATE .env FOR LOCAL DEMO (SQLite - no PostgreSQL needed)
+================================================================================
+
+Open the .env file and change this line:
+
+FROM:
+  DATABASE_URL=postgresql://ocr_user:jmendes@localhost/ocr_app_db
+
+TO:
+  DATABASE_URL=sqlite:///./demo.db
+
+This uses SQLite instead of PostgreSQL - simpler for demo, no setup needed.
+
+
+================================================================================
+STEP 2: ACTIVATE VIRTUAL ENVIRONMENT
+================================================================================
+
+Open terminal in the project folder and run:
+
+  cd /home/joseph/Desktop/pdf-ocr-extractor
+  source venv/bin/activate
+
+
+================================================================================
+STEP 3: INSTALL DEPENDENCIES (if not already done)
+================================================================================
+
+  pip install -r requirements.txt
+
+
+================================================================================
+STEP 4: RUN THE APPLICATION
+================================================================================
+
+  python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+OR simply:
+
+  python main.py
+
+
+================================================================================
+STEP 5: ACCESS THE APPLICATION
+================================================================================
+
+Open browser and go to:
+
+  http://localhost:8000
+
+You'll see the landing page. From there you can:
+- Sign up (email verification will show code in terminal since no email config)
+- Log in
+- Upload PDFs or images for OCR processing
+
+
+================================================================================
+IMPORTANT NOTES FOR DEMO
+================================================================================
+
+1. EMAIL VERIFICATION:
+   - Since MAILERSEND_API_KEY is not in local .env, verification codes
+     will be PRINTED TO THE TERMINAL instead of sent via email
+   - Look for "📧 EMAIL (Development Mode)" in terminal output
+   - Copy the 6-digit code from there
+
+2. OCR PROCESSING:
+   - Tesseract is installed on your system ✓
+   - Upload PDF or image files and they will be processed locally
+
+3. DATABASE:
+   - Using SQLite creates a file called "demo.db" in project folder
+   - Each run preserves data (users, documents, etc.)
+   - Delete demo.db to start fresh
+
+4. DO NOT COMMIT .env CHANGES:
+   - The .env file is in .gitignore so it won't affect production
+   - Production uses Render's environment variables, not this file
+
+
+================================================================================
+QUICK START (copy-paste these commands)
+================================================================================
+
+cd /home/joseph/Desktop/pdf-ocr-extractor
+source venv/bin/activate
+sed -i 's|DATABASE_URL=postgresql://.*|DATABASE_URL=sqlite:///./demo.db|' .env
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+
+================================================================================
+TO DEMO SPECIFIC FEATURES
+================================================================================
+
+1. LANDING PAGE: http://localhost:8000
+   - Shows the hero page with features
+
+2. SIGN UP: http://localhost:8000/register
+   - Create account, get verification code from terminal
+
+3. LOGIN: http://localhost:8000/login
+   - Log in with created account
+
+4. UPLOAD & OCR: http://localhost:8000/upload (after login)
+   - Upload PDF or image
+   - View extracted text
+
+5. HISTORY: http://localhost:8000/history (after login)
+   - View previously processed documents
+
+
+================================================================================
+STOPPING THE SERVER
+================================================================================
+
+Press Ctrl+C in the terminal to stop the server.
+
+
+================================================================================
+RESTORING FOR PRODUCTION (if needed)
+================================================================================
+
+If you accidentally change something, production is unaffected because:
+- Production uses Render environment variables (not .env)
+- .env is gitignored
+- Just don't push to main branch
+
+To restore .env for local PostgreSQL (original):
+  DATABASE_URL=postgresql://ocr_user:jmendes@localhost/ocr_app_db
+
+================================================================================

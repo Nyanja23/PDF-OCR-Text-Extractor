@@ -234,7 +234,11 @@ async def reset_password(
 @router.get("/google")
 async def google_login(request: Request):
     """Initiate Google OAuth login"""
-    redirect_uri = settings.GOOGLE_REDIRECT_URI
+    # Dynamically construct redirect URI from current request
+    # This works in both development and production
+    scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+    host = request.headers.get("x-forwarded-host", request.headers.get("host", request.url.netloc))
+    redirect_uri = f"{scheme}://{host}/api/auth/google/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
@@ -264,10 +268,10 @@ async def google_callback(
         auth_service = AuthService(db)
         user = auth_service.create_oauth_user(email, name, "google")
         
-        # Create session
+        # Create session using OAuth-specific login (no password verification)
         ip_address = request.client.host
         user_agent = request.headers.get("user-agent", "")
-        _, session_id = auth_service.login(email, None, ip_address, user_agent)
+        _, session_id = auth_service.oauth_login(email, ip_address, user_agent)
         
         # Redirect to callback page with authorization code
         # The callback.html page will handle the redirect to dashboard

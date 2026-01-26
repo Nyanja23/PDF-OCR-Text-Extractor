@@ -739,13 +739,12 @@
             }
         });
         
-        // Google signup
+        // Google signup - redirect to OAuth endpoint
         document.getElementById('googleBtn').addEventListener('click', function() {
             this.innerHTML = '<i class="fab fa-google"></i> Connecting<span class="spinner"></span>';
-            setTimeout(() => {
-                this.innerHTML = '<i class="fab fa-google"></i> Sign up with Google';
-                alert('Google OAuth would be implemented here. This is a demo.');
-            }, 1500);
+            this.disabled = true;
+            // Redirect to Google OAuth endpoint (same flow for login/signup)
+            window.location.href = '/api/auth/google';
         });
         
         // Real-time input validation feedback
