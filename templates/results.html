@@ -776,55 +776,85 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
             try {
                 console.log('📝 Loading results for job_id:', jobId);
                 
-                // Fetch results from API
-                const response = await fetch(`/api/ocr/result/${jobId}`, {
+                // First try to fetch from in-memory cache
+                let response = await fetch(`/api/ocr/result/${jobId}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    credentials: 'include' // Important: send cookies for authentication
+                    credentials: 'include'
                 });
                 
-                clearTimeout(loadingTimeout); // Clear the timeout once response arrives
-                console.log('📝 API Response status:', response.status);
+                let data;
+                let fromDatabase = false;
                 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('API error details:', errorText);
-                    throw new Error(`API error: ${response.status} - ${errorText}`);
+                    // Try to fetch from database (persistent storage)
+                    console.log('📝 Not in cache, trying database...');
+                    response = await fetch(`/api/ocr/document/${jobId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('API error details:', errorText);
+                        throw new Error(`Document not found`);
+                    }
+                    
+                    fromDatabase = true;
                 }
                 
-                const data = await response.json();
-                console.log('📝 API Response data:', data);
+                clearTimeout(loadingTimeout);
+                data = await response.json();
+                console.log('📝 API Response data:', data, 'fromDatabase:', fromDatabase);
                 
                 // Display results
                 document.getElementById('loadingState').style.display = 'none';
                 document.getElementById('contentState').style.display = 'block';
                 
-                // Combine all page texts
                 let fullText = '';
-                if (data.results && Array.isArray(data.results)) {
-                    console.log('📝 Found', data.results.length, 'results');
-                    fullText = data.results.map(result => {
-                        return `--- Page ${result.page_number} ---\n${result.text}`;
-                    }).join('\n\n');
+                
+                if (fromDatabase) {
+                    // Data from database has different structure
+                    fullText = data.extracted_text || 'No text extracted';
+                    
+                    // Update file info
+                    if (data.filename) {
+                        document.getElementById('filename').textContent = data.filename;
+                    }
+                    if (data.total_pages) {
+                        document.getElementById('pageCount').textContent = data.total_pages;
+                    }
+                    if (data.processing_time) {
+                        document.getElementById('processingTime').textContent = data.processing_time.toFixed(2);
+                    }
                 } else {
-                    console.log('📝 No results array found in response');
+                    // Data from in-memory cache
+                    if (data.results && Array.isArray(data.results)) {
+                        console.log('📝 Found', data.results.length, 'results');
+                        fullText = data.results.map(result => {
+                            return `--- Page ${result.page_number} ---\n${result.text}`;
+                        }).join('\n\n');
+                    }
+                    
+                    // Update file info
+                    if (data.filename) {
+                        document.getElementById('filename').textContent = data.filename;
+                    }
+                    if (data.total_pages) {
+                        document.getElementById('pageCount').textContent = data.total_pages;
+                    }
+                    if (data.total_processing_time) {
+                        document.getElementById('processingTime').textContent = data.total_processing_time.toFixed(2);
+                    }
                 }
                 
                 // Update the text content
                 document.getElementById('textContent').textContent = fullText || 'No text extracted';
-                
-                // Update file info
-                if (data.filename) {
-                    document.getElementById('filename').textContent = data.filename;
-                }
-                if (data.total_pages) {
-                    document.getElementById('pageCount').textContent = data.total_pages;
-                }
-                if (data.total_processing_time) {
-                    document.getElementById('processingTime').textContent = data.total_processing_time.toFixed(2);
-                }
                 
                 // Update stats
                 updateStats();

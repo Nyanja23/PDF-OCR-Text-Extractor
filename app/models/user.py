@@ -1,9 +1,9 @@
 """
 app/models/user.py
-Database models for User, Session, and OTP
+Database models for User, Session, OTP, and Document
 """
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime, timedelta
 import uuid
@@ -32,6 +32,7 @@ class User(Base):
     # Relationships
     sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan")
     otps = relationship("OTP", back_populates="user", cascade="all, delete-orphan")
+    documents = relationship("Document", back_populates="user", cascade="all, delete-orphan")
     
     def is_locked(self) -> bool:
         """Check if account is locked"""
@@ -93,3 +94,23 @@ class OTP(Base):
     def is_valid(self) -> bool:
         """Check if OTP is valid (not used and not expired)"""
         return not self.is_used and not self.is_expired()
+
+
+class Document(Base):
+    """Processed document model - stores OCR results"""
+    __tablename__ = "documents"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(String, unique=True, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    filename = Column(String, nullable=False)
+    file_type = Column(String, nullable=True)  # 'pdf', 'image'
+    total_pages = Column(Integer, default=1)
+    extracted_text = Column(Text, nullable=True)  # Store the extracted text
+    confidence = Column(Float, nullable=True)
+    processing_time = Column(Float, nullable=True)
+    status = Column(String, default="completed")  # 'processing', 'completed', 'failed'
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="documents")

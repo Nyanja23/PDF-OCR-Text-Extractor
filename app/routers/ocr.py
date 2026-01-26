@@ -6,14 +6,15 @@ OCR processing API endpoints
 from fastapi import APIRouter, Depends, UploadFile, File, Form, BackgroundTasks
 from fastapi.responses import FileResponse, PlainTextResponse
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Optional, List
 import uuid
 import time
+import os
 from datetime import datetime
 
 from app.core.database import get_db
 from app.core.dependencies import get_verified_user
-from app.models.user import User
+from app.models.user import User, Document
 from app.schemas.ocr import OCRResponse, OCRResult
 from app.services.ocr_service import OCRService
 from app.services.file_service import FileService
@@ -23,7 +24,7 @@ from app.core.exceptions import BadRequestException, OCRProcessingException
 router = APIRouter()
 
 
-# In-memory storage for OCR jobs (in production, use Redis or database)
+# In-memory storage for OCR jobs (temporary, also saved to DB)
 ocr_jobs = {}
 
 
@@ -68,12 +69,34 @@ async def upload_and_process(
             created_at=datetime.utcnow()
         )
         
-        # Store result for later retrieval
+        # Store result for later retrieval (in-memory)
         ocr_jobs[job_id] = {
             "user_id": current_user.id,
             "response": response,
             "created_at": datetime.utcnow()
         }
+        
+        # Save to database for persistent history
+        full_text = "\n\n".join([r.text for r in results])
+        avg_confidence = sum([r.confidence for r in results]) / len(results) if results else 0
+        
+        # Determine file type
+        file_ext = os.path.splitext(file.filename)[1].lower()
+        file_type = "pdf" if file_ext == ".pdf" else "image"
+        
+        document = Document(
+            job_id=job_id,
+            user_id=current_user.id,
+            filename=file.filename,
+            file_type=file_type,
+            total_pages=len(results),
+            extracted_text=full_text[:50000],  # Limit to 50KB of text
+            confidence=avg_confidence,
+            processing_time=total_time,
+            status="completed"
+        )
+        db.add(document)
+        db.commit()
         
         return response
     
@@ -148,6 +171,87 @@ async def get_supported_languages():
         "languages": languages,
         "default": "eng"
     }
+
+
+@router.get("/history")
+async def get_document_history(
+    limit: int = 10,
+    current_user: User = Depends(get_verified_user),
+    db: Session = Depends(get_db)
+):
+    """Get user's recent processed documents"""
+    documents = db.query(Document).filter(
+        Document.user_id == current_user.id
+    ).order_by(Document.created_at.desc()).limit(limit).all()
+    
+    return {
+        "documents": [
+            {
+                "job_id": doc.job_id,
+                "filename": doc.filename,
+                "file_type": doc.file_type,
+                "total_pages": doc.total_pages,
+                "confidence": doc.confidence,
+                "processing_time": doc.processing_time,
+                "status": doc.status,
+                "created_at": doc.created_at.isoformat()
+            }
+            for doc in documents
+        ]
+    }
+
+
+@router.get("/document/{job_id}")
+async def get_document(
+    job_id: str,
+    current_user: User = Depends(get_verified_user),
+    db: Session = Depends(get_db)
+):
+    """Get a specific document by job ID (from database)"""
+    document = db.query(Document).filter(
+        Document.job_id == job_id,
+        Document.user_id == current_user.id
+    ).first()
+    
+    if not document:
+        raise BadRequestException("Document not found")
+    
+    return {
+        "job_id": document.job_id,
+        "filename": document.filename,
+        "file_type": document.file_type,
+        "total_pages": document.total_pages,
+        "extracted_text": document.extracted_text,
+        "confidence": document.confidence,
+        "processing_time": document.processing_time,
+        "status": document.status,
+        "created_at": document.created_at.isoformat()
+    }
+
+
+@router.delete("/document/{job_id}")
+async def delete_document(
+    job_id: str,
+    current_user: User = Depends(get_verified_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a document from history"""
+    document = db.query(Document).filter(
+        Document.job_id == job_id,
+        Document.user_id == current_user.id
+    ).first()
+    
+    if not document:
+        raise BadRequestException("Document not found")
+    
+    db.delete(document)
+    db.commit()
+    
+    # Also remove from in-memory cache if present
+    if job_id in ocr_jobs:
+        del ocr_jobs[job_id]
+    
+    return {"message": "Document deleted successfully"}
 
 
 @router.delete("/cleanup-jobs")
